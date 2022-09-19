@@ -1,565 +1,26 @@
-import React, { FunctionComponent } from "react";
+import React, { FunctionComponent, useState } from "react";
 import styled from "styled-components/native";
-import { Container, SCREEN_HEIGHT, SCREEN_WIDTH } from "../app_components/shared";
+import { Container, MEDIA_CLASSES, SCREEN_HEIGHT, SCREEN_WIDTH } from "../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText } from '../app_components/Text/Text'
 // import { withTheme } from 'styled-components'
 import { useTheme } from 'styled-components'
-import { WorkoutGroupWorkoutList, WorkoutItemCardList } from '../app_components/Cards/cardList'
+import { WorkoutCardList, WorkoutGroupWorkoutList, WorkoutItemCardList } from '../app_components/Cards/cardList'
 
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
 import { WorkoutCardProps } from "../app_components/Cards/types";
 import { ScrollView } from "react-native-gesture-handler";
-import { View } from "react-native";
-import { useGetWorkoutGroupClassDataViewQuery } from "../redux/api/apiSlice";
-import { Button } from "@react-native-material/core";
+import { TouchableWithoutFeedback, View } from "react-native";
+import { useDeleteWorkoutGroupMutation, useGetWorkoutsForGymClassWorkoutGroupQuery, useGetWorkoutsForUsersWorkoutGroupsQuery } from "../redux/api/apiSlice";
+import { Button, IconButton, Switch } from "@react-native-material/core";
+import Icon from 'react-native-vector-icons/Ionicons';
+import { processMultiWorkoutStats, StatsPanel } from "./WorkoutDetailScreen";
+import { MediaURLSlider } from "../app_components/MediaSlider/MediaSlider";
+import { ActionCancelModal } from "./Profile";
 export type Props = StackScreenProps<RootStackParamList, "WorkoutScreen">
 
-// Normal set x reps
-const mock_workout_data_0 = {
-    "id": "7",
-    "workout_items": [
-        {
-            "id": "5",
-            "name": {
-                "id": "1",
-                "name": "Squat",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "5",
-            "reps": "5",
-            "duration": "0.0",
-            "duration_unit": "-1",
-            "weights": "[10, 20, 30, 40, 50]",
-            "weight_unit": "%",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "6",
-            "name": {
-                "id": "2",
-                "name": "Bench Press",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "3",
-            "reps": "5",
-            "duration": "0.0",
-            "duration_unit": "-1",
-            "weights": "[10,40, 50]",
-            "weight_unit": "kg",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "7",
-            "name": {
-                "id": "2",
-                "name": "Sprint",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "0",
-            "reps": "0",
-            "duration": "0.0",
-            "duration_unit": "-1",
-            "weights": "[100]",
-            "weight_unit": "m",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-    ],
-    "title": "First WOD",
-    "desc": "This is the first workout",
-    "owner_id": "1",
-    "owned_by_class": true,
-    "scheme_type": "0",
-    "scheme_rounds": "[]",
-    "media_ids": "[]",
-    "date": "2022-08-08T01:49:03.572442Z"
-}
-// 7 Rounds for time:
-const mock_workout_data_1 = {
-    "id": "8",
-    "workout_items": [
-        {
-            "id": "5",
-            "name": {
-                "id": "1",
-                "name": "Squat",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "10",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[10]",
-            "weight_unit": "kg",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "6",
-            "name": {
-                "id": "2",
-                "name": "Bench Press",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "10",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[10]",
-            "weight_unit": "kg",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "7",
-            "name": {
-                "id": "2",
-                "name": "Sprint",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "0",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[100,200,150,250,175,275,300]",
-            "weight_unit": "m",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-    ],
-    "title": "Round based workout",
-    "desc": "5 rds: 7 Rounds of: etc...",
-    "owner_id": "1",
-    "owned_by_class": true,
-    "scheme_type": "1",
-    "scheme_rounds": "[7]",
-    "media_ids": "[]",
-    "date": "2022-08-08T01:49:03.572442Z"
-}
-// 21-15-9
-const mock_workout_data_2 = {
-    "id": "7",
-    "workout_items": [
-        {
-            "id": "5",
-            "name": {
-                "id": "1",
-                "name": "Squat",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "-1",
-            "duration": "-1.0",
-            "duration_unit": "-1",
-            "weights": "[10]",
-            "weight_unit": "kg",
-            "intensity": "-1",
-            "rest_duration": "10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        }
-    ],
-    "title": "Workouts like CF girls, 21-15-9, 40-30-20-10",
-    "desc": "Rep based workout",
-    "owner_id": "1",
-    "owned_by_class": true,
-    "scheme_type": "2",
-    "scheme_rounds": "[21,15,9]",
-    "media_ids": "[]",
-    "date": "2022-08-08T01:49:03.572442Z"
-}
 
-// 20 mins of:
-const mock_workout_data_3 = {
-    "id": "8",
-    "workout_items": [
-        {
-            "id": "5",
-            "name": {
-                "id": "1",
-                "name": "Squat",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "10",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[10]",
-            "weight_unit": "kg",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "6",
-            "name": {
-                "id": "2",
-                "name": "Bench Press",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "10",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[0.5]",
-            "weight_unit": "bw",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "7",
-            "name": {
-                "id": "2",
-                "name": "Sprint",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "0",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[100,200,150,250,175,275,300]",
-            "weight_unit": "m",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-        {
-            "id": "7",
-            "name": {
-                "id": "4",
-                "name": "Shoulder Press",
-                "desc": "",
-                "media_ids": "[]",
-                "date": "2022-08-08T01:48:50.738421Z"
-            },
-            "rounds": "-1",
-            "sets": "-1",
-            "reps": "0",
-            "duration": "-0.0",
-            "duration_unit": "-1",
-            "weights": "[50]",
-            "weight_unit": "%",
-            "intensity": "-1",
-            "rest_duration": "-10.0",
-            "rest_duration_unit": "1",
-            "date": "2022-08-12T02:24:20.457897Z",
-            "workout": "7",
-        },
-    ],
-    "title": "Time based workout",
-    "desc": "20 mins for total rounds + reps of Squat w/ 10kg, Bench @ 1/2 of your body weight, Sprints with each rounds increasing in distance, and finally a shoulder press at 50% of your 1RM",
-    "owner_id": "1",
-    "owned_by_class": true,
-    "scheme_type": "3",
-    "scheme_rounds": "[20]",
-    "media_ids": "[]",
-    "date": "2022-08-08T01:49:03.572442Z"
-}
-
-const new_workouts = [
-    {
-        "id": 18,
-        "workout_items": [
-            {
-                "id": 11,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 0,
-                "sets": 3,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": 1,
-                "weights": "[70, 75, 80]",
-                "weight_unit": "%",
-                "intensity": -1,
-                "rest_duration": 90,
-                "rest_duration_unit": 0,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-            {
-                "id": 12,
-                "name": {
-                    "id": 2,
-                    "name": "Deadlift",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 0,
-                "sets": 3,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": -1,
-                "weights": "[70, 75, 80]",
-                "weight_unit": "%",
-                "intensity": -1,
-                "rest_duration": 90,
-                "rest_duration_unit": 0,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-        ],
-        "title": "Diablo",
-        "desc": "Do this one as fast as possible. Its spicy.",
-        "scheme_type": 0,
-        "scheme_rounds": "[]",
-        "date": "2022-08-14T03:56:41.124507Z",
-        "group": {
-            "id": 2,
-            "owner_id": "1",
-            "owned_by_class": false,
-            "title": "WorkoutGroup 2 by User",
-            "caption": "askdmaklsdmas",
-            "media_ids": "[\"0.png\", \"1.png\"]",
-            "date": "2022-08-14T03:53:10.105385Z"
-        }
-    },
-    {
-        "id": 19,
-        "workout_items": [
-            {
-                "id": 12,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 5,
-                "sets": 0,
-                "reps": 0,
-                "duration": 10.0,
-                "duration_unit": 1,
-                "weights": "[10, 20, 30, 40, 50]",
-                "weight_unit": "kg",
-                "intensity": 0,
-                "rest_duration": 45.0,
-                "rest_duration_unit": 0,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-            {
-                "id": 13,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 1,
-                "sets": 2,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": -1,
-                "weights": "[10, 20, 30]",
-                "weight_unit": "kg",
-                "intensity": 0,
-                "rest_duration": 10.0,
-                "rest_duration_unit": 1,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-            {
-                "id": 14,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 1,
-                "sets": 2,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": -1,
-                "weights": "[10, 20, 30]",
-                "weight_unit": "kg",
-                "intensity": 0,
-                "rest_duration": 10.0,
-                "rest_duration_unit": 1,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-            {
-                "id": 15,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 1,
-                "sets": 2,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": -1,
-                "weights": "[10, 20, 30]",
-                "weight_unit": "kg",
-                "intensity": 0,
-                "rest_duration": 10.0,
-                "rest_duration_unit": 1,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-            {
-                "id": 11,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 1,
-                "sets": 2,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": -1,
-                "weights": "[10, 20, 30]",
-                "weight_unit": "kg",
-                "intensity": 0,
-                "rest_duration": 10.0,
-                "rest_duration_unit": 1,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            },
-        ],
-        "title": "User Title here",
-        "desc": "User workout",
-        "scheme_type": 0,
-        "scheme_rounds": "[]",
-        "date": "2022-08-14T03:56:41.124507Z",
-        "group": {
-            "id": 2,
-            "owner_id": "1",
-            "owned_by_class": false,
-            "title": "WorkoutGroup 2 by User",
-            "caption": "askdmaklsdmas",
-            "media_ids": "[\"0.png\", \"1.png\"]",
-            "date": "2022-08-14T03:53:10.105385Z"
-        }
-    },
-    {
-        "id": 20,
-        "workout_items": [
-            {
-                "id": 11,
-                "name": {
-                    "id": 1,
-                    "name": "Squat",
-                    "desc": "",
-                    "media_ids": "[]",
-                    "date": "2022-08-08T01:48:50.738421Z"
-                },
-                "rounds": 1,
-                "sets": 2,
-                "reps": 5,
-                "duration": 0.0,
-                "duration_unit": -1,
-                "weights": "[10, 20, 30]",
-                "weight_unit": "kg",
-                "intensity": 0,
-                "rest_duration": 10.0,
-                "rest_duration_unit": 1,
-                "percent_of": "1RM",
-                "date": "2022-08-14T03:56:55.547429Z",
-                "workout": 18
-            }
-        ],
-        "title": "User Title here",
-        "desc": "User workout",
-        "scheme_type": 0,
-        "scheme_rounds": "[]",
-        "date": "2022-08-14T03:56:41.124507Z",
-        "group": {
-            "id": 2,
-            "owner_id": "1",
-            "owned_by_class": false,
-            "title": "WorkoutGroup 2 by User",
-            "caption": "askdmaklsdmas",
-            "media_ids": "[\"0.png\", \"1.png\"]",
-            "date": "2022-08-14T03:53:10.105385Z"
-        }
-    },
-]
-
-const WorkoutInfoSection = styled.ImageBackground`
+const MediaSlider = styled.ImageBackground`
     width: 100%;
     height: 100%;
     resize-mode: cover;
@@ -567,7 +28,6 @@ const WorkoutInfoSection = styled.ImageBackground`
     overflow: hidden;
     marginBottom: 12px;
 `;
-
 
 const Row = styled.View`
     flex-direction: row;
@@ -639,10 +99,23 @@ const DisplayWorkout: FunctionComponent<WorkoutCardProps> = (props) => {
 
 const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) => {
     const theme = useTheme();
-    console.log("WorkoutScreen props: ", params);
-    const { id, title, caption, owned_by_class, owner_id, media_ids } = params || {};
-    const { data, isLoading, isSuccess, isError, error } = useGetWorkoutGroupClassDataViewQuery(id);
-    console.log("Fetch all workouts for Workout Group: ", id, data)
+    const { id, title, caption, owned_by_class, owner_id, media_ids } = params.data || {}; // Workout group
+    let queryResult;
+    if (owned_by_class) {
+        queryResult = useGetWorkoutsForGymClassWorkoutGroupQuery(id);
+
+    } else {
+        queryResult = useGetWorkoutsForUsersWorkoutGroupsQuery(id);
+
+    }
+    const { data, isLoading, isSuccess, isError, error } = queryResult;
+
+    // Fetch workouts for WorkoutGroup, call depedning on owned_by_class
+    const workoutGroup = data ? data : {} as WorkoutCardProps
+    const [editable, setEditable] = useState(false);
+    const [showCreate, setShowCreate] = useState(false);
+    // console.log("WorkoutScreen props: ", params);
+    // console.log("Fetch all workouts for Workout Group: ", params)
 
 
     const openCreateWorkoutScreenForStandard = () => {
@@ -666,16 +139,41 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
             schemeType: 2
         })
     }
+    const openCreateWorkoutScreenForTime = () => {
+        navigation.navigate("CreateWorkoutScreen", {
+            workoutGroupID: id.toString(),
+            workoutGroupTitle: title,
+            schemeType: 3
+        })
+    }
+
+    const [deleteWorkoutGroupMutation, { isLoading: isDeleteGymClassLoading }] = useDeleteWorkoutGroupMutation()
+    const [deleteWorkoutGroupModalVisible, setDeleteWorkoutGroupModalVisibleVisible] = useState(false);
+
+    const onConfirmDelete = () => {
+        setDeleteWorkoutGroupModalVisibleVisible(true)
+    }
+    const onDelete = async () => {
+        const deletedWorkoutGroup = await deleteWorkoutGroupMutation(id).unwrap();
+        setDeleteWorkoutGroupModalVisibleVisible(false)
+    }
+
+    const [tags, names] = processMultiWorkoutStats(workoutGroup.workouts)
 
     return (
         <WorkoutScreenContainer>
 
+
             <Row style={{ flex: 1 }}>
-                <RegularText>{title}</RegularText>
+                <RegularText>{title} ({id})</RegularText>
             </Row>
-            <Row style={{ flex: 11 }}>
-                <WorkoutInfoSection source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }}>
-                </WorkoutInfoSection>
+            <Row style={{ flex: 5 }}>
+                <MediaURLSlider
+                    data={JSON.parse(media_ids)}
+                    mediaClassID={id}
+                    mediaClass={MEDIA_CLASSES[2]}
+                />
+
             </Row>
             <Row style={{ flex: 1 }}>
                 <SmallText>{caption}</SmallText>
@@ -693,41 +191,105 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
                 Then,
                 Create a page to create a workout to add to the current, WGroup
                 Add a button here to nav to that page, passing this WGroup id over
-
-
             */}
+            {
+                // Instead of a simple boolean, lets use something that indicates ownership
+                // WE should check if the user is an owner or coach of this Gym/Class/Workout
+                // Simple bool is good for user's view from Profile page since we can allow the user to have the editable view.
 
+                // How should we determine?  // Add attr userCanEdit to getWorkoutGroup queries, 
+                params.editable ?
+                    <>
+                        <View style={{ flex: 1, flexDirection: 'row', marginBottom: 12, justifyContent: 'flex-end', alignContent: 'flex-end', alignItems: 'flex-end', width: '100%' }}>
+                            <View style={{ display: showCreate ? 'flex' : 'none', flexDirection: 'row' }}>
+                                <Button onPress={openCreateWorkoutScreenForStandard.bind(this)} title="Reg" />
+                                <Button onPress={openCreateWorkoutScreenForReps.bind(this)} title="Reps" />
+                                <Button onPress={openCreateWorkoutScreenForRounds.bind(this)} title="Rounds" />
+                                <Button onPress={openCreateWorkoutScreenForTime.bind(this)} title="Timed" />
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Button onPress={() => setShowCreate(!showCreate)} title={showCreate ? "X" : "Add workout"} />
+                                <IconButton style={{ height: 24, display: !showCreate ? 'flex' : 'none', }} icon={<Icon name='remove-circle-sharp' color="red" style={{ fontSize: 24 }} />} onPress={onConfirmDelete} />
+                            </View>
 
-            <Row style={{ flex: 2 }}>
-                <Button onPress={openCreateWorkoutScreenForStandard.bind(this)} title="Add Standard Workout" />
-            </Row>
-            <Row style={{ flex: 2 }}>
-                <Button onPress={openCreateWorkoutScreenForReps.bind(this)} title="Add Reps Workout" />
-            </Row>
-            <Row style={{ flex: 2 }}>
-                <Button onPress={openCreateWorkoutScreenForRounds.bind(this)} title="Add Rounds Workout" />
-            </Row>
-            <Row style={{ flex: 10 }}>
+                        </View>
+
+                        <View style={{ flex: 1, flexDirection: 'row', width: '100%', marginBottom: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <TouchableWithoutFeedback onPress={() => setEditable(!editable)}>
+                                <View>
+                                    <Switch
+                                        value={editable}
+                                        onValueChange={(v) => {
+                                            setEditable(!editable)
+                                        }}
+
+                                        trackColor={{ true: theme.palette.primary.contrastText, false: theme.palette.primary.contrastText }}
+                                        thumbColor={editable ? theme.palette.primary.main : theme.palette.gray}
+                                    />
+                                    <SmallText>Delete</SmallText>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </View>
+
+                    </>
+                    :
+                    <></>
+            }
+            <Row style={{ flex: 1, width: '100%', borderRadius: 8 }}></Row>
+            <View style={{
+                flex: 4, width: '100%',
+                borderRadius: 8,
+                backgroundColor: theme.palette.gray,
+                paddingVertical: 20,
+                paddingLeft: 10,
+            }}>
+                <Row>
+                    <ScrollView>
+                        <View style={{ marginTop: 16, marginRight: 8 }}>
+                            <StatsPanel
+                                tags={tags}
+                                names={names}
+                            />
+
+                        </View>
+                    </ScrollView>
+                </Row>
+
+            </View>
+            <Row style={{ flex: 1, width: '100%', borderRadius: 8 }}></Row>
+
+            <Row style={{ flex: 9, width: "100%" }}>
                 {/* // TODO()  Make this a Flat list and render each workout item in sequence not in a flast list*/}
-                <View style={{ flex: 1 }}>
-                    {
-                        isLoading ?
-                            <SmallText>Loading....</SmallText>
-                            : isSuccess ?
+                {
+                    isLoading ?
+                        <SmallText>Loading....</SmallText>
+                        : isSuccess ?
 
-                                <WorkoutGroupWorkoutList data={data.workouts} />
+                            <WorkoutCardList
+                                data={workoutGroup.workouts}
+                                editable={editable}
+                            />
 
 
 
-                                : isError ?
 
-                                    <SmallText>Error.... {error.toString()}</SmallText>
-                                    :
-                                    <SmallText>No Data</SmallText>
-                    }
-                </View>
+                            : isError ?
+
+                                <SmallText>Error.... {error.toString()}</SmallText>
+                                :
+                                <SmallText>No Data</SmallText>
+                }
+
 
             </Row>
+            <ActionCancelModal
+                actionText="Delete Workout Group"
+                closeText="Close"
+                modalText={`Delete ${title}?`}
+                onAction={onDelete}
+                modalVisible={deleteWorkoutGroupModalVisible}
+                onRequestClose={() => setDeleteWorkoutGroupModalVisibleVisible(false)}
+            />
         </WorkoutScreenContainer >
     );
 };

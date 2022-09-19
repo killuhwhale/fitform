@@ -1,3 +1,3 @@
 const BASEURL = "http://localhost:8000/"
-
-export { BASEURL };
+const SPACES_URL = "https://fitform.sfo3.digitaloceanspaces.com"
+export { BASEURL, SPACES_URL };

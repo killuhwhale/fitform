@@ -2,13 +2,13 @@ import React, { FunctionComponent } from "react";
 import styled from "styled-components/native";
 import { useTheme } from 'styled-components'
 import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
+import { MEDIA_CLASSES, SCREEN_HEIGHT, SCREEN_WIDTH, withSpaceURL } from '../shared'
 import { GymCardProps } from "./types";
 import darkBackground from "./../../../assets/bgs/dark_bg.png"
 import mockLogo from "./../../../assets/bgs/mock_logo.png"
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Props as HomeScreenProps } from "./../../app_pages/home";
+import { Props as HomeScreenProps } from "../../app_pages/Home";
 
 
 const GymCardBG = styled.ImageBackground`
@@ -68,9 +68,11 @@ const GymCard: FunctionComponent<GymCardProps> = (props) => {
     const navigation = useNavigation<HomeScreenProps["navigation"]>();
 
     const handlePress = () => { navigation.navigate("GymScreen", { ...props }) };
-
+    const mainURL = withSpaceURL('main', parseInt(props.id), MEDIA_CLASSES[0])
+    const logoURL = withSpaceURL('logo', parseInt(props.id), MEDIA_CLASSES[0])
+    console.log("Gym card img urls ", props, mainURL, logoURL)
     return (
-        <GymCardBG source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }}>
+        <GymCardBG source={{ uri: mainURL }}>
             <CardTouchable underlayColor={theme.palette.transparent} activeOpacity={0.9} onPress={handlePress} >
                 <TouchableView>
                     <CardRow>
@@ -82,7 +84,7 @@ const GymCard: FunctionComponent<GymCardProps> = (props) => {
                                 <View style={{ flex: 3 }}>
                                     <RegularText textStyles={{ paddingLeft: 16, paddingTop: 8 }} >{props.title} </RegularText>
                                 </View>
-                                <LogoImage source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }} />
+                                <LogoImage source={{ uri: logoURL }} />
                             </CardRow>
                         </GymCardFooterBG>
                     </CardRow>

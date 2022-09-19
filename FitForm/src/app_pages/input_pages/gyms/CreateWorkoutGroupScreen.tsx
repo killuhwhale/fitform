@@ -72,7 +72,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
     const dispatch = useAppDispatch();
     const [files, setFiles] = useState<ImageOrVideo[]>();
     const [title, setTitle] = useState("");
-    const [ownerId, setOwnerId] = useState("");
+
     // Need to set ownedByClass somehow......
     // 1. User has classes, use a picker || Deciding to not use a picker. We will just go to the class and add from there...
     // 2. User does not have classes, no picker.
@@ -96,7 +96,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
 
         // Need to get file from the URI
         const data = new FormData();
-        data.append('owner_id', ownerId);
+        data.append('owner_id', ownerID);
         data.append('owned_by_class', ownedByClass);
         data.append('title', title);
         data.append('caption', caption);
@@ -114,7 +114,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
             const workoutGroup = await createWorkoutGroup(data).unwrap();
             console.log("Gym class res", workoutGroup)
             if (workoutGroup.id) {
-                navigation.navigate("HomePageTabs", { screen: "Profile" })
+                navigation.goBack()
             }
 
         } catch (err) {
@@ -127,7 +127,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
 
     return (
         <PageContainer>
-            <RegularText>Create gym class</RegularText>
+            <RegularText>Create Workout Group</RegularText>
             <View style={{ height: '100%', width: '100%' }}>
 
                 <View style={{ flex: 3 }}>

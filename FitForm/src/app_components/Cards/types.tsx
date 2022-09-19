@@ -32,11 +32,17 @@ export interface GymClassCardListProps {
 }
 
 
+export interface WorkoutCategoryProps {
+    title: string;
+}
 
 export interface WorkoutNameProps {
     id: number;
     name: string;
     desc: string;
+    categories: WorkoutCategoryProps[];
+    primary: WorkoutCategoryProps;
+    secondary: WorkoutCategoryProps;
     media_ids: string;
     date: string;
 }
@@ -46,17 +52,20 @@ export interface WorkoutNameProps {
 export interface WorkoutItemProps {
     id: number;
     name: WorkoutNameProps;
-    rounds: number;
+    ssid: number;
+    distance: number;
+    distance_unit: number;
     sets: number;
     reps: number;
     duration: number;
     duration_unit: number;
     weights: string;
     weight_unit: string;
-    intensity: number;
+
     rest_duration: number;
     rest_duration_unit: number;
     percent_of: string;
+    order: number;
     date: string;
     workout: number;
 }
@@ -76,10 +85,13 @@ export interface WorkoutCardProps {
     scheme_type: number;
     scheme_rounds: string;
     date: string;
+    editable?: boolean;
+
 
 }
 export interface WorkoutCardListProps {
     data: Array<WorkoutCardProps>;
+    editable?: boolean;
 }
 
 
@@ -91,11 +103,13 @@ export interface WorkoutGroupCardProps {
     owned_by_class: boolean;
     media_ids: string;
     date: string;
-
+    editable?: boolean;
+    userCanEdit?: boolean;
 }
 
 export interface WorkoutGroupCardListProps {
     data: Array<WorkoutGroupCardProps>;
+    editable: boolean;
 }
 
 export interface WorkoutGroupProps {
@@ -107,6 +121,9 @@ export interface WorkoutGroupProps {
     media_ids: string;
     date: string;
     workouts: Array<WorkoutCardProps>;
+    user_can_edit?: boolean;
+    user_is_gym_owner?: boolean;
+    user_is_coach?: boolean;
 
 }
 

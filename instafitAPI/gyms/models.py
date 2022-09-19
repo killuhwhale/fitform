@@ -81,7 +81,7 @@ class Workouts(models.Model):
     title = models.CharField(max_length=50)
     desc = models.CharField(max_length=250)
     # Schemas: Round, Rep, Weightlifting
-    scheme_type = models.IntegerField(default=0)
+    scheme_type = models.IntegerField(default=0)  # 0, 1, 2
     scheme_rounds = models.CharField(
         max_length=100, default="[]")  # Json stringified list [] rounds/ rep-scheme (not used in weightlifting scheme)
     date = models.DateTimeField(auto_now_add=True)
@@ -98,16 +98,20 @@ class WorkoutNames(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     categories = models.ManyToManyField(WorkoutCategories)
     primary = models.ForeignKey(
-        WorkoutCategories, related_name="workoutcategories_primary_set", on_delete=models.CASCADE)
+        WorkoutCategories, related_name="workoutcategories_primary_set", on_delete=models.CASCADE, blank=True, null=True)
     secondary = models.ForeignKey(
-        WorkoutCategories, related_name="workoutcategories_secondary_set", on_delete=models.CASCADE)
+        WorkoutCategories, related_name="workoutcategories_secondary_set", on_delete=models.CASCADE, blank=True, null=True)
 
 
 class WorkoutItems(models.Model):
     workout = models.ForeignKey(Workouts, on_delete=models.CASCADE)
     name = models.ForeignKey(
         WorkoutNames, on_delete=models.CASCADE)                # Squat
-    rounds = models.IntegerField(default=0)                    # None
+    ssid = models.IntegerField(default=-1, blank=True)
+
+    distance = models.FloatField(default=0.0)
+    distance_unit = models.IntegerField(default=0)
+    # removed:   intensity, rounds
     sets = models.IntegerField(default=0)                      # 3
     reps = models.IntegerField(default=0)                      # 5
     duration = models.FloatField(default=0.0)                  # None
@@ -115,11 +119,10 @@ class WorkoutItems(models.Model):
     weights = models.CharField(
         max_length=400, default="[]")   # [100, 155, 185]
     weight_unit = models.CharField(max_length=2, default='kg')  # None
-    intensity = models.IntegerField(default=0)             # None
     rest_duration = models.FloatField(default=0.0)                  # None
     rest_duration_unit = models.IntegerField(default=0)             # None
     percent_of = models.CharField(max_length=20, default='1RM')  # None
-
+    order = models.IntegerField()             # None
     date = models.DateTimeField(auto_now_add=True)
 
 

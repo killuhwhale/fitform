@@ -70,7 +70,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
     // const navigation = useNavigation<WorkoutScreenProps["navigation"]>();
     // const handlePress = () => { navigation.navigate("WorkoutScreen", { ...props }) };
     const handlePress = () => { };
-    const { duration, duration_unit, intensity, reps, rounds, rest_duration, rest_duration_unit, sets, weight_unit, weights, name } = props
+    const { duration, duration_unit, reps, rest_duration, rest_duration_unit, sets, weight_unit, weights, name } = props
     const weights_list: Array<number> = JSON.parse(weights)
     const weightStr = displayWeights(weights_list)
     const weight_units: Set<string> = new Set(["kg", "lb"]);
@@ -98,11 +98,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
                             :
                             <></>
                         }
-                        {rounds > 0 ?
-                            <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >Rounds {rounds} </SmallText>
-                            :
-                            <></>
-                        }
+
                         {sets > 0 ?
                             <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >Sets {sets} </SmallText>
                             :
@@ -120,11 +116,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
                             :
                             <></>
                         }
-                        {intensity >= 0 ?
-                            <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >Intensity {intensity}</SmallText>
-                            :
-                            <></>
-                        }
+
                         {rest_duration >= 0 ?
                             <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >Rest Duration {rest_duration} {rest_duration_unit}</SmallText>
                             :

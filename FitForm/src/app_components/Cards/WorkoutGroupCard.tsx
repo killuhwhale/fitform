@@ -5,7 +5,9 @@ import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
 import { useNavigation } from "@react-navigation/native";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
 import { WorkoutGroupCardProps } from "./types";
-import darkBackground from "./../../../assets/bgs/dark_bg.png"
+import grayGradient from "./../../../assets/bgs/graygrad.png"
+import greenGrad from "./../../../assets/bgs/greenGrad.png"
+import bluish from "./../../../assets/bgs/bluish.png"
 import mockLogo from "./../../../assets/bgs/mock_logo.png"
 import { View } from "react-native";
 import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
@@ -13,10 +15,11 @@ import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
 const CardBG = styled.ImageBackground`
     height: ${SCREEN_HEIGHT * 0.25}px;
     width: ${SCREEN_WIDTH * 0.92}px;
-    resize-mode: cover;
     border-radius: 25px;
-    overflow: hidden;
     marginBottom: 12px;
+    resize-mode: cover;
+    overflow: hidden;
+    background-color: linear-gradient(90deg, #0700b8 0%, #00ff88 100%);
 `;
 
 
@@ -40,10 +43,19 @@ const TouchableView = styled.View`
     align-items: center;
     flex: 1;    
 `;
+const CardContainer = styled.View`
+    background-color: linear-gradient(90deg, #0700b8 0%, #00ff88 100%);
+    height: ${SCREEN_HEIGHT * 0.25}px;
+    width: ${SCREEN_WIDTH * 0.92}px;
+    border-radius: 25px;
+    marginBottom: 12px;
+`;
 
 const CardRow = styled.View`
     flex-direction: row;
     justify-content: space-between;
+    align-content: center;
+    align-items: center;
 `;
 
 const MainImage = styled.Image`
@@ -63,24 +75,30 @@ const WorkoutGroupCard: FunctionComponent<WorkoutGroupCardProps> = (props) => {
     const theme = useTheme();
 
     const navigation = useNavigation<GymClassScreenProps["navigation"]>();
-    const handlePress = () => { navigation.navigate("WorkoutScreen", { ...props }) };
+    const handlePress = () => { navigation.navigate("WorkoutScreen", { data: props, editable: props.editable ? true : false }) };
 
-
+    console.log("WGCard: ", props)
 
     return (
-        <CardBG source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }}>
+        <CardBG source={bluish}>
             <CardTouchable underlayColor={theme.palette.transparent} activeOpacity={0.9} onPress={handlePress} >
                 <TouchableView>
-                    <CardRow>
+                    <View style={{ width: "100%", height: '65%', justifyContent: 'flex-end', alignItems: 'flex-end', paddingRight: 16 }}>
                         <RegularText>
-                            {props.title} - {props.caption}
+                            {props.caption}
                         </RegularText>
-                    </CardRow>
+                        <SmallText>
+                            {props.date}
+                        </SmallText>
+                    </View>
+
                     <CardRow style={{ height: '25%' }}>
-                        <CardFooterBG >
+                        <CardFooterBG source={bluish}>
                             <CardRow style={{ height: '100%' }}>
 
-                                <LogoImage source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }} />
+                                <RegularText textStyles={{ paddingLeft: 16 }}>{props.title}</RegularText>
+
+
                             </CardRow>
                         </CardFooterBG>
                     </CardRow>
@@ -88,7 +106,7 @@ const WorkoutGroupCard: FunctionComponent<WorkoutGroupCardProps> = (props) => {
                 </TouchableView>
             </CardTouchable>
 
-        </CardBG >
+        </CardBG>
     );
 };
 

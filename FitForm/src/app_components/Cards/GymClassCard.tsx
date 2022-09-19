@@ -2,7 +2,7 @@ import React, { FunctionComponent } from "react";
 import styled from "styled-components/native";
 import { useTheme } from 'styled-components'
 import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
+import { MEDIA_CLASSES, SCREEN_HEIGHT, SCREEN_WIDTH, withSpaceURL } from '../shared'
 import { GymClassCardProps } from "./types";
 import darkBackground from "./../../../assets/bgs/dark_bg.png"
 import mockLogo from "./../../../assets/bgs/mock_logo.png"
@@ -64,9 +64,10 @@ const GymClassCard: FunctionComponent<GymClassCardProps> = (props) => {
     // Gym class card is on the Gym screen
     const navigation = useNavigation<GymScreenProps["navigation"]>();
     const handlePress = () => { navigation.navigate("GymClassScreen", { ...props }) };
-
+    const mainURL = withSpaceURL('main', parseInt(props.id), MEDIA_CLASSES[1])
+    const logoURL = withSpaceURL('logo', parseInt(props.id), MEDIA_CLASSES[1])
     return (
-        <CardBG source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }}>
+        <CardBG source={{ uri: mainURL }}>
             <CardTouchable underlayColor={theme.palette.transparent} activeOpacity={0.9} onPress={handlePress} >
                 <TouchableView>
                     <CardRow>
@@ -78,7 +79,7 @@ const GymClassCard: FunctionComponent<GymClassCardProps> = (props) => {
                                 <View style={{ flex: 3 }}>
                                     <RegularText textStyles={{ paddingLeft: 16, paddingTop: 8 }} >{props.title}: {props.id}</RegularText>
                                 </View>
-                                <LogoImage source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }} />
+                                <LogoImage source={{ uri: logoURL }} />
                             </CardRow>
                         </CardFooterBG>
                     </CardRow>

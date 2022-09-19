@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import React, { FunctionComponent, ReactNode, useEffect, useState, type PropsWithChildren } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import HomePage from './src/app_pages/home';
+import HomePage from './src/app_pages/Home';
 import RootStack from './src/navigators/RootStack'
 import { DefaultTheme, ThemeProvider, useTheme } from "styled-components/native";
 import {
@@ -37,15 +37,15 @@ const DarkTheme: DefaultTheme = {
       contrastText: "#fff"
     },
     tertiary: {
-      main: "#85c6d8",
+      main: "#007cff",
       contrastText: "#fff"
     },
     accent: "#fbcd77",
     text: "#fcfcfc",
     backgroundColor: "#000",
-    gray: "#d1d5db",
-    lightGray: '#f3f4f6',
-    darkGray: '#3b5563',
+    lightGray: '#474747',
+    gray: "#2c365a",
+    darkGray: '#2d2d2d',
     transparent: '#34353578',
   }
 
@@ -63,12 +63,12 @@ const LightTheme: DefaultTheme = {
       contrastText: "#fff"
     },
     tertiary: {
-      main: "#85c6d8",
+      main: "#007cff",
       contrastText: "#fff"
     },
-    gray: "#d1d5db",
-    lightGray: '#f3f4f6',
-    darkGray: '#3b5563',
+    lightGray: '#474747',
+    gray: "#2c365a",
+    darkGray: '#2d2d2d',
     accent: "#fbcd77",
     text: "#000",
     backgroundColor: "#fff",

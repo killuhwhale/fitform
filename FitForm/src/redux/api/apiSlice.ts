@@ -136,6 +136,34 @@ export const apiSlice = createApi({
     // The "endpoints" represent operations and requests for this server
     endpoints: builder => ({
         // The `getPosts` endpoint is a "query" operation that returns data
+        getUsers: builder.query({
+            // The URL for the request is '/fakeApi/posts'
+            query: () => { return { url: 'users/' } },
+        }),
+        createCoach: builder.mutation({
+            query: (data = {}) => ({ url: 'coaches/', method: 'POST', data, params: { contentType: "multipart/form-data" } }),
+        }),
+        getCoachesForGymClass: builder.query({
+            // The URL for the request is '/fakeApi/posts'
+            query: (id) => { return { url: `coaches/${id}/coaches/` } },
+        }),
+        deleteCoach: builder.mutation({
+            query: (data = {}) => ({ url: 'coaches/remove/', method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+        }),
+
+        createMember: builder.mutation({
+            query: (data = {}) => ({ url: 'classMembers/', method: 'POST', data, params: { contentType: "multipart/form-data" } }),
+        }),
+        getMembersForGymClass: builder.query({
+            // The URL for the request is '/fakeApi/posts'
+            query: (id) => { return { url: `classMembers/${id}/members/` } },
+        }),
+        deleteMember: builder.mutation({
+            query: (data = {}) => ({ url: 'classMembers/remove/', method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+        }),
+
+
+
         getGyms: builder.query({
             // The URL for the request is '/fakeApi/posts'
             query: () => { return { url: 'gyms/' } },
@@ -147,27 +175,72 @@ export const apiSlice = createApi({
         createGym: builder.mutation({
             query: (data = {}) => ({ url: 'gyms/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
         }),
+        favoriteGym: builder.mutation({
+            query: (data) => ({ url: `gyms/favorite/`, method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
+        }),
+        unfavoriteGym: builder.mutation({
+            query: (data) => ({ url: `gyms/unfavorite/`, method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+        }),
+        deleteGym: builder.mutation({
+            query: (id) => ({ url: `gyms/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+        }),
         getGymDataView: builder.query({
             query: (id) => { return { url: `gyms/${id}/gymsclasses/` } },
         }),
+
+
         createGymClass: builder.mutation({
             query: (data = {}) => ({ url: 'gymClasses/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
         }),
         getGymClassDataView: builder.query({
             query: (id) => { return { url: `gymClasses/${id}/workouts/` } },
         }),
+        favoriteGymClass: builder.mutation({
+            query: (data) => ({ url: `gymClasses/favorite/`, method: 'POST', data, params: { contentType: "multipart/form-data" } }),
+        }),
+        unfavoriteGymClass: builder.mutation({
+            query: (data) => ({ url: `gymClasses/unfavorite/`, method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+        }),
+        deleteGymClass: builder.mutation({
+            query: (id) => ({ url: `gymsClasses/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+        }),
+
+
 
         getWorkoutNames: builder.query({
             query: () => { return { url: `workoutNames/`, } }
         }),
-        getWorkoutGroupClassDataView: builder.query({
-            query: (id) => { return { url: `workoutGroups/user_workouts/`, } }
-        }),
-        getUsersWorkoutGroups: builder.query({
+
+
+        getWorkoutsForGymClassWorkoutGroup: builder.query({
             query: (id) => { return { url: `workoutGroups/${id}/class_workouts/`, } }
+        }),
+        getWorkoutsForUsersWorkoutGroups: builder.query({
+            query: (id) => { return { url: `workoutGroups/user_workouts/`, } }
         }),
         createWorkoutGroup: builder.mutation({
             query: (data = {}) => ({ url: 'workoutGroups/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
+        }),
+        deleteWorkoutGroup: builder.mutation({
+            query: (id) => ({ url: `workoutGroups/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+        }),
+
+
+        getWorkoutForWorkoutGroup: builder.query({
+            query: (id) => { return { url: `workout/${id}/class_workouts/`, } }
+        }),
+
+        createWorkout: builder.mutation({
+            query: (data = {}) => ({ url: 'workouts/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
+        }),
+        deleteWorkout: builder.mutation({
+            query: (id) => ({ url: `workouts/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+        }),
+        getWorkoutItemsForWorkout: builder.query({
+            query: (id) => { return { url: `workoutGroups/${id}/class_workouts/`, } }
+        }),
+        createWorkoutItems: builder.mutation({
+            query: (data = {}) => ({ url: 'workoutItems/items/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
         }),
 
         getProfileView: builder.query({
@@ -185,9 +258,18 @@ export const apiSlice = createApi({
 
 // Export the auto-generated hook for the `getPosts` query endpoint
 export const {
+    useCreateCoachMutation,
+    useGetCoachesForGymClassQuery,
+    useDeleteCoachMutation,
+
+    useCreateMemberMutation,
+    useDeleteMemberMutation,
+    useGetMembersForGymClassQuery,
+
+
+    useGetUsersQuery,
     useGetGymsQuery,
     useGetGymDataViewQuery,
-
 
     useGetGymClassDataViewQuery,
 
@@ -198,11 +280,23 @@ export const {
 
 
     useGetWorkoutNamesQuery,
-    useGetUsersWorkoutGroupsQuery,
-    useGetWorkoutGroupClassDataViewQuery,
+    useGetWorkoutsForGymClassWorkoutGroupQuery,
+    useGetWorkoutsForUsersWorkoutGroupsQuery,
 
 
     useCreateGymMutation,
+    useDeleteGymMutation,
+    useFavoriteGymMutation,
+    useUnfavoriteGymMutation,
+
     useCreateGymClassMutation,
+    useFavoriteGymClassMutation,
+    useUnfavoriteGymClassMutation,
+    useDeleteGymClassMutation,
+
+    useDeleteWorkoutMutation,
     useCreateWorkoutGroupMutation,
+    useDeleteWorkoutGroupMutation,
+    useCreateWorkoutMutation,
+    useCreateWorkoutItemsMutation,
 } = apiSlice

@@ -3,11 +3,11 @@ import { NavigationContainer, NavigationContainerRefWithCurrent } from '@react-n
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import HomePage from "../app_pages/home";
+import HomePage from "../app_pages/Home";
 import GymScreen from "../app_pages/GymScreen";
 import GymClassScreen from "../app_pages/GymClassScreen";
 import WorkoutScreen from "../app_pages/WorkoutScreen";
-import { GymCardProps, GymClassCardProps, WorkoutCardProps, WorkoutGroupCardProps } from "../app_components/Cards/types";
+import { GymCardProps, GymClassCardProps, WorkoutCardProps, WorkoutGroupCardProps, WorkoutNameProps } from "../app_components/Cards/types";
 import { useTheme } from "styled-components";
 import Profile from "../app_pages/Profile";
 import AuthScreen from "../app_pages/AuthScreen";
@@ -15,13 +15,20 @@ import CreateGymScreen from "../app_pages/input_pages/gyms/CreateGymScreen";
 import CreateGymClassScreen from "../app_pages/input_pages/gyms/CreateGymClassScreen";
 import CreateWorkoutGroupScreen from "../app_pages/input_pages/gyms/CreateWorkoutGroupScreen";
 import CreateWorkoutScreen from "../app_pages/input_pages/gyms/CreateWorkoutScreen";
+import WorkoutDetailScreen from "../app_pages/WorkoutDetailScreen";
+import WorkoutNameDetailScreen from "../app_pages/WorkoutNameDetailScreen";
 
 // Screens and props each screen expects...
 export type RootStackParamList = {
     HomePage: undefined;
     GymScreen: GymCardProps;
     GymClassScreen: GymClassCardProps;
-    WorkoutScreen: WorkoutGroupCardProps;
+    WorkoutScreen: {
+        data: WorkoutGroupCardProps;
+        editable: boolean;
+    },
+    WorkoutDetailScreen: WorkoutCardProps;
+    WorkoutNameDetailScreen: WorkoutNameProps;
     Profile: undefined;
     AuthScreen: undefined;
     Header: undefined;
@@ -87,6 +94,8 @@ const RootStack: FunctionComponent<RootstackProps> = (props) => {
             <Stack.Screen name="CreateGymClassScreen" component={CreateGymClassScreen} options={{ headerTitle: "" }} />
             <Stack.Screen name="CreateWorkoutGroupScreen" component={CreateWorkoutGroupScreen} options={{ headerTitle: "" }} />
             <Stack.Screen name="CreateWorkoutScreen" component={CreateWorkoutScreen} options={{ headerTitle: "" }} />
+            <Stack.Screen name="WorkoutDetailScreen" component={WorkoutDetailScreen} options={{ headerTitle: "" }} />
+            <Stack.Screen name="WorkoutNameDetailScreen" component={WorkoutNameDetailScreen} options={{ headerTitle: "" }} />
 
 
         </Stack.Navigator>

@@ -16,7 +16,7 @@ env /usr/bin/arch -arm64 /bin/bash --login
 npx react-native start     
 npx react-native run-ios
 
-npx react-native run-ios --udid 2925F233-FFBB-4143-A849-ACE85DF7F5EF
+npx react-native run-ios --udid CCF49CB5-3952-4D51-8830-27A2BA1FEB1B
 
 import { GymCardProps } from "../app_components/Cards/types"
 import { get, post } from "../utils/fetchAPI"
@@ -43,3 +43,19 @@ TODOs
         - Filter gyms
         - Filter classes
         - Filter workout groups
+
+
+    Todo Next:
+    
+        Finish creating other types of workouts, only reps are completed...
+
+        Features:
+            - Refresh Redux cache
+
+            - Edit User info
+                - Change pass
+                - Change username
+            
+            - Search Gyms Feature
+            - Filter Gyms and Classes Component
+            

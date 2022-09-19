@@ -14,19 +14,6 @@ import { decrement, increment } from '../redux/slicers/slicer'
 import { Button } from "@react-native-material/core";
 import { useGetGymsQuery } from "../redux/api/apiSlice";
 
-const mock_gym_data = [
-    {
-        id: "1",
-        title: "Test Gym",
-        desc: "This is a test gym, come workout!",
-        owner_id: "1",
-        date: "2022-08-08T01:48:45.640081Z",
-        mainImage: "gyms/1/main.png",
-        logoImage: "gyms/1/logo.png",
-    }
-]
-
-
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
 export type Props = StackScreenProps<RootStackParamList, "HomePage">
@@ -48,11 +35,10 @@ const HomePage: FunctionComponent<Props> = ({ navigation }) => {
     // Access/ send actions
     const dispatch = useAppDispatch();
 
-
     return (
         <HomePageContainer>
-            <RegularText>Tes {count}</RegularText>
-            <Button onPress={() => dispatch(increment())} title={`Increment: ${count}`} />
+            {/* <RegularText>Tes {count}</RegularText>
+            <Button onPress={() => dispatch(increment())} title={`Increment: ${count}`} /> */}
             {
                 isLoading ?
                     <SmallText>Loading....</SmallText>

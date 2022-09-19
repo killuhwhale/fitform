@@ -88,12 +88,14 @@ const AuthScreen: FunctionComponent = () => {
                                     style={{ height: 100 }}
                                     onChangeText={onEmailChange.bind(this)}
                                     label="Email"
+                                    value={email}
                                     helperText={emailHelperText}
                                     leading={props => <Icon name="person" {...props} />}
                                 />
                                 <TextInput
                                     style={{ height: 100 }}
                                     label="Password"
+                                    value={password}
                                     onChangeText={onPasswordChange.bind(this)}
                                     secureTextEntry={hidePassword}
                                     trailing={props => <Icon name="eye" onPress={() => setHidePassword(!hidePassword)} {...props} />}

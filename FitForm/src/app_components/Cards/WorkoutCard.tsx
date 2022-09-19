@@ -1,26 +1,29 @@
-import React, { FunctionComponent } from "react";
+import React, { FunctionComponent, useState } from "react";
 import styled from "styled-components/native";
 import { useTheme } from 'styled-components'
 import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
 import { useNavigation } from "@react-navigation/native";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
 import { GymClassCardProps, WorkoutCardProps } from "./types";
-import darkBackground from "./../../../assets/bgs/dark_bg.png"
-import mockLogo from "./../../../assets/bgs/mock_logo.png"
+import { displayWeights, ItemString } from "../../app_pages/input_pages/gyms/CreateWorkoutScreen";
 import { View } from "react-native";
 import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
+import { AnimatedButton } from "../Buttons/buttons";
+import { useDeleteWorkoutMutation } from "../../redux/api/apiSlice";
+import { WorkoutItemPreviewHorizontalList } from "./cardList";
 
 const CardBG = styled.ImageBackground`
+    resize-mode: cover;
     height: ${SCREEN_HEIGHT * 0.25}px;
     width: ${SCREEN_WIDTH * 0.92}px;
-    resize-mode: cover;
     border-radius: 25px;
-    overflow: hidden;
     marginBottom: 12px;
+    border: 1px;
+    border-color: white;
 `;
 
 
-const CardFooterBG = styled.ImageBackground`
+const CardFooterBG = styled.View`
     resize-mode: cover;
     border-radius: 25px;
     background-color: ${props => props.theme.palette.transparent};
@@ -59,40 +62,69 @@ const LogoImage = styled.Image`
     flex:1;
 `;
 
+
+//Todo 
+// Button for WorkoutName info/ media
+// Button to add workout to CompletedWorkouts
+// Possbily this will pre-load a new Component/ Model that way we can alter the numbers we used instead....
+// Caculate load/ volume of workout.
+
 const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
     const theme = useTheme();
+    const cardWidth = SCREEN_WIDTH * 0.92
+    const colWidth = cardWidth * 0.45
 
     const navigation = useNavigation<GymClassScreenProps["navigation"]>();
-    const handlePress = () => { navigation.navigate("WorkoutScreen", { ...props }) };
+    // const handlePress = () => { navigation.navigate("WorkoutScreen", { ...props }) };
+    const handlePress = () => { };
+    const [deleteWorkout, { isLoading }] = useDeleteWorkoutMutation();
+    const numItems = props.workout_items.length - 1
+    const itemsPerCol = 1
+    const numCols = Math.max(
+        1,
+        Math.ceil((props.workout_items.length) / itemsPerCol)
+    );
+    const navToWorkoutDetail = () => {
+        navigation.navigate("WorkoutDetailScreen", props)
+    }
 
 
     return (
-        <CardBG source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }}>
-            <CardTouchable underlayColor={theme.palette.transparent} activeOpacity={0.9} onPress={handlePress} >
-                <TouchableView>
-                    <CardRow>
+        <View style={{
+            backgroundColor: theme.palette.gray,
+            width: SCREEN_WIDTH * 1.0,
+            borderRadius: 25,
+            marginBottom: 24,
+            paddingBottom: 12,
 
+        }}>
+            <View style={{ width: '100%', paddingLeft: 8, paddingTop: 8, flex: 1 }}>
+                <WorkoutItemPreviewHorizontalList
+                    data={props.workout_items}
+                    schemeType={props.scheme_type}
+                    itemWidth={colWidth}
+                />
+
+            </View>
+            <View style={{ borderColor: theme.palette.text, borderWidth: props.editable ? 5 : 0, borderRadius: 25, backgroundColor: theme.palette.transparent, flex: 1 }} >
+                <AnimatedButton
+                    onFinish={() => props.editable ? deleteWorkout(props.id) : navToWorkoutDetail()}
+                    title="del workout"
+                    active={props.editable}
+                >
+                    <CardRow style={{ height: '100%' }}>
+                        <View style={{
+                            flex: 3, flexDirection: 'row', paddingLeft: 16,
+                            alignContent: 'center', alignItems: 'center',
+                            justifyContent: 'space-between', paddingRight: 16
+                        }}>
+                            <RegularText>{props.title}  </RegularText>
+                            <RegularText>{displayWeights(props.scheme_rounds)}</RegularText>
+                        </View>
                     </CardRow>
-                    <CardRow style={{ height: '25%' }}>
-                        <CardFooterBG >
-                            <CardRow style={{ height: '100%' }}>
-                                <View style={{ flex: 3 }}>
-                                    <RegularText textStyles={{ paddingLeft: 16, paddingTop: 8 }} >{props.title}  </RegularText>
-                                    {props.workout_items.map((item) => {
-                                        return (
-                                            <SmallText textStyles={{ paddingLeft: 26 }}>{item.name.name} - {item.sets}x{item.reps}</SmallText>
-                                        );
-                                    })}
-                                </View>
-                                <LogoImage source={{ uri: 'https://www.nasa.gov/sites/default/files/thumbnails/image/web_first_images_release.png' }} />
-                            </CardRow>
-                        </CardFooterBG>
-                    </CardRow>
-
-                </TouchableView>
-            </CardTouchable>
-
-        </CardBG >
+                </AnimatedButton>
+            </View>
+        </View >
     );
 };
 

@@ -14,7 +14,8 @@ class s3Client:
                                region_name='nyc3',
                                endpoint_url=env('SPACES_ENDPOINT_FULL'),
                                aws_access_key_id=env('SPACES_KEY'),
-                               aws_secret_access_key=env('SPACES_SECRET')
+                               aws_secret_access_key=env('SPACES_SECRET'),
+
                                )
 
     def __init__(self):
@@ -38,7 +39,7 @@ class s3Client:
                 Bucket=self.BUCKET,
                 Key=f'{file_kind}/{parent_id}/{filename}',
                 Body=file,
-                ACL='private',
+                ACL='public',
                 Metadata={
                     'mykey': "myvalue"
                 }

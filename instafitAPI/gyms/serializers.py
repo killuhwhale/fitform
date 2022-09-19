@@ -45,7 +45,17 @@ class GymClassCreateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class WorkoutCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutCategories
+        fields = '__all__'
+
+
 class WorkoutNamesSerializer(serializers.ModelSerializer):
+    primary = WorkoutCategorySerializer(required=False)
+    secondary = WorkoutCategorySerializer(required=False)
+    categories = WorkoutCategorySerializer(many=True, required=False)
+
     class Meta:
         model = WorkoutNames
         fields = '__all__'
@@ -71,11 +81,6 @@ class WorkoutItemCreateSerializer(serializers.ModelSerializer):
 #         model = WorkoutMedia
 #         fields = '__all__'
 
-class WorkoutCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = WorkoutCategories
-        fields = '__all__'
-
 
 class WorkoutSerializer(serializers.ModelSerializer):
     workout_items = WorkoutItemSerializer(
@@ -95,6 +100,12 @@ class WorkoutGroupsSerializer(serializers.ModelSerializer):
         model = WorkoutGroups
         fields = '__all__'
         depth = 2
+
+
+class WorkoutGroupsWithoutWorkoutsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutGroups
+        fields = '__all__'
 
 
 class WorkoutGroupsCreateSerializer(serializers.ModelSerializer):
@@ -184,13 +195,19 @@ class BodyMeasurementsSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.Serializer):
     username = serializers.CharField()
-    email = serializers.CharField()
+    email = serializers.CharField(required=False)
+    id = serializers.IntegerField()
+
+
+class UserWithoutEmailSerializer(serializers.Serializer):
+    username = serializers.CharField()
     id = serializers.IntegerField()
 
 
 class ProfileSerializer(serializers.Serializer):
     user = UserSerializer()
-    workout_groups = WorkoutGroupsSerializer(many=True, required=False)
+    workout_groups = WorkoutGroupsWithoutWorkoutsSerializer(
+        many=True, required=False)
     favorite_gyms = GymFavoritesSerializer(many=True, required=False)
     favorite_gym_classes = GymClassFavoritesSerializer(
         many=True, required=False)

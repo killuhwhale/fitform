@@ -134,11 +134,13 @@ const CreateGymClassScreen: FunctionComponent<Props> = ({ navigation }) => {
                     <TextInput
                         onChangeText={(t) => setTitle(t)}
                         label="Title"
+                        value={title}
                         // helperText={}
                         leading={props => <Icon name="checkmark-circle-outline" {...props} />}
                     />
                     <TextInput
                         label="Description"
+                        value={desc}
                         onChangeText={(d) => setDesc(d)}
                         leading={props => <Icon name="checkmark-circle-outline" {...props} />}
                     />

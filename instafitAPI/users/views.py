@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
-from users.serializers import UserSerializer, GroupSerializer
+from users.serializers import UserSerializer, GroupSerializer, UserWithoutEmailSerializer
 from rest_framework.decorators import action
 from gyms.s3 import s3Client
 from gyms.views import FILES_KINDS
@@ -48,6 +48,11 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print("User profile image upload: ", e)
             return Response("Error uploading user profile image")
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return UserWithoutEmailSerializer
+        return UserSerializer
 
 
 class GroupViewSet(viewsets.ModelViewSet):
