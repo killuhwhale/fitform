@@ -215,20 +215,31 @@ export const apiSlice = createApi({
         getWorkoutsForGymClassWorkoutGroup: builder.query({
             query: (id) => { return { url: `workoutGroups/${id}/class_workouts/`, } }
         }),
-        getWorkoutsForUsersWorkoutGroups: builder.query({
-            query: (id) => { return { url: `workoutGroups/user_workouts/`, } }
+
+        getWorkoutsForUsersWorkoutGroup: builder.query({
+            query: (id) => { return { url: `workoutGroups/${id}/user_workouts/`, } }
         }),
+
+
+
+
+
         createWorkoutGroup: builder.mutation({
             query: (data = {}) => ({ url: 'workoutGroups/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
+        }),
+        finishWorkoutGroup: builder.mutation({
+            query: (data = {}) => ({ url: `workoutGroups/finish/`, method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
         }),
         deleteWorkoutGroup: builder.mutation({
             query: (id) => ({ url: `workoutGroups/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
         }),
 
 
+
         getWorkoutForWorkoutGroup: builder.query({
             query: (id) => { return { url: `workout/${id}/class_workouts/`, } }
         }),
+
 
         createWorkout: builder.mutation({
             query: (data = {}) => ({ url: 'workouts/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
@@ -236,12 +247,34 @@ export const apiSlice = createApi({
         deleteWorkout: builder.mutation({
             query: (id) => ({ url: `workouts/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
         }),
-        getWorkoutItemsForWorkout: builder.query({
-            query: (id) => { return { url: `workoutGroups/${id}/class_workouts/`, } }
-        }),
+
+
         createWorkoutItems: builder.mutation({
             query: (data = {}) => ({ url: 'workoutItems/items/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
         }),
+
+
+
+
+        createCompletedWorkout: builder.mutation({
+            query: (data = {}) => ({ url: 'completedWorkoutGroups/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
+        }),
+        getCompletedWorkout: builder.query({
+            query: (id) => ({ url: `completedWorkoutGroups/${id}/completed_workout_group/` }),
+        }),
+        getCompletedWorkoutByWorkoutID: builder.query({
+            query: (id) => ({ url: `completedWorkoutGroups/${id}/completed_workout_group_by_og_workout_group/` }),
+        }),
+        deleteCompletedWorkoutGroup: builder.mutation({
+            query: (id) => ({ url: `completedWorkoutGroups/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+        }),
+
+
+        deleteCompletedWorkout: builder.mutation({
+            query: (id) => ({ url: `completedWorkouts/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+        }),
+
+
 
         getProfileView: builder.query({
             query: () => { return { url: `profile/profile/`, } }
@@ -249,6 +282,10 @@ export const apiSlice = createApi({
 
         getUserInfo: builder.query({
             query: (id) => { return { url: `users/user_info/`, } }
+        }),
+
+        getCompletedWorkoutGroupsForUserByDateRange: builder.query({
+            query: (data = {}) => { return { url: `stats/${data.id}/user_workouts/?start_date=${data.startDate}&end_date=${data.endDate}` } }
         }),
 
 
@@ -273,7 +310,6 @@ export const {
 
     useGetGymClassDataViewQuery,
 
-
     useGetUserInfoQuery,
     useGetUserGymsQuery,
     useGetProfileViewQuery,
@@ -281,8 +317,12 @@ export const {
 
     useGetWorkoutNamesQuery,
     useGetWorkoutsForGymClassWorkoutGroupQuery,
-    useGetWorkoutsForUsersWorkoutGroupsQuery,
+    useGetWorkoutsForUsersWorkoutGroupQuery,
 
+    useGetCompletedWorkoutQuery,
+    useGetCompletedWorkoutByWorkoutIDQuery,
+    useDeleteCompletedWorkoutGroupMutation,
+    useDeleteCompletedWorkoutMutation,
 
     useCreateGymMutation,
     useDeleteGymMutation,
@@ -294,9 +334,13 @@ export const {
     useUnfavoriteGymClassMutation,
     useDeleteGymClassMutation,
 
+    useFinishWorkoutGroupMutation,
+
     useDeleteWorkoutMutation,
     useCreateWorkoutGroupMutation,
     useDeleteWorkoutGroupMutation,
     useCreateWorkoutMutation,
     useCreateWorkoutItemsMutation,
+    useCreateCompletedWorkoutMutation,
+    useGetCompletedWorkoutGroupsForUserByDateRangeQuery,
 } = apiSlice

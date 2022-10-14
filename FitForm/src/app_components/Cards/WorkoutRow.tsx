@@ -3,7 +3,7 @@ import { Button, Flex, Typography, Chip, Divider } from "@react-native-material/
 import styled from "styled-components/native";
 import { useTheme, withTheme } from 'styled-components'
 import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
+import { DISTANCE_UNITS_SET, SCREEN_HEIGHT, SCREEN_WIDTH, WEIGHT_UNITS_SET } from '../shared'
 import { WorkoutCardProps, WorkoutItemProps } from "./types";
 import darkBackground from "./../../../assets/bgs/dark_bg.png"
 import mockLogo from "./../../../assets/bgs/mock_logo.png"
@@ -12,6 +12,7 @@ import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Props as WorkoutScreenProps } from "../../app_pages/WorkoutScreen";
 import { DURATION_UNITS, WEIGHT_UNITS, PERCENTAGE_UNITS, BODYWEIGHT_UNITS, DISTANCE_UNITS, INTENSITY_LABELS } from "../shared"
+import { displayNumArray } from "./WorkoutItemRow";
 
 const CardBG = styled.ImageBackground`
     width: ${SCREEN_WIDTH * 0.92}px;
@@ -53,19 +54,6 @@ const LogoImage = styled.Image`
     flex:1;
 `;
 
-const display_rep_scheme = (rounds: Array<number>) => {
-    let str = '';
-    console.log(rounds)
-    rounds.forEach(num => str += `${num}-`)
-    return `${str.slice(0, -1)}:`
-};
-const displayWeights = (weights_list) => {
-    let str = '';
-    weights_list.forEach(num => str += `${num}, `)
-    return str.slice(0, -2)
-};
-
-
 interface WorkoutItemChipProps {
     label: string | ReactNode;
     color?: string;
@@ -84,16 +72,16 @@ const WorkoutItemChip: FunctionComponent<WorkoutItemChipProps> = (props) => {
 
 const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
     const theme = useTheme();
-    const { duration, duration_unit, intensity, reps, rounds, rest_duration, rest_duration_unit, sets, weight_unit, weights, name, percent_of } = props;
+    const { duration, duration_unit, reps, rest_duration, rest_duration_unit, sets, weight_unit, weights, name, percent_of } = props;
 
     const weights_list: Array<number> = JSON.parse(weights)
-    const weightStr = displayWeights(weights_list)
+    const weightStr = displayNumArray(weights_list)
 
     const weightLabel: string =
-        WEIGHT_UNITS.has(weight_unit) ? "Wt" :
+        WEIGHT_UNITS_SET.has(weight_unit) ? "Wt" :
             PERCENTAGE_UNITS.has(weight_unit) ? "" :
                 BODYWEIGHT_UNITS.has(weight_unit) ? "Dist" :
-                    DISTANCE_UNITS.has(weight_unit) ? "Body weight" :
+                    DISTANCE_UNITS_SET.has(weight_unit) ? "Body weight" :
                         "";
     const percent_of_str = PERCENTAGE_UNITS.has(weight_unit) ? ` of ${percent_of}` : "";
     return (
@@ -101,13 +89,8 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
             <Divider color={theme.palette.text} />
             <View style={{ flexDirection: "row", justifyContent: "flex-start", marginVertical: 6 }} >
                 <WorkoutItemChip label={<SmallText>{name.name} </SmallText>} color={theme.palette.primary.main} />
-                {rounds > 0 ?
 
-                    <WorkoutItemChip label={<SmallText>{rounds} rounds</SmallText>} />
-                    :
-                    <></>
-                }
-                {duration > 0 ?
+                {duration ?
 
                     <WorkoutItemChip label={<SmallText> of {duration} {DURATION_UNITS[duration_unit]}</SmallText>} />
                     :
@@ -120,7 +103,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
                     :
                     <></>
                 }
-                {reps > 0 ?
+                {reps ?
                     <WorkoutItemChip label={<SmallText>{reps} reps</SmallText>} />
                     // <RegularText> {reps} reps</RegularText>
                     :
@@ -130,12 +113,6 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
             <View style={{ flexDirection: "row", justifyContent: "flex-start", marginBottom: 12 }} >
                 {JSON.parse(weights) ?
                     <WorkoutItemChip color={theme.palette.tertiary.main} label={<SmallText>{weightLabel} {weightStr} {weight_unit} {percent_of_str}</SmallText>} />
-
-                    :
-                    <></>
-                }
-                {intensity >= 0 ?
-                    <WorkoutItemChip label={<SmallText>{INTENSITY_LABELS[intensity]} Intensity</SmallText>} />
 
                     :
                     <></>
@@ -185,7 +162,7 @@ const WorkoutRow: FunctionComponent<WorkoutCardProps> = (props) => {
                             : scheme_type == 2 ?
                                 <>
                                     <SmallText>Rep scheme</SmallText>
-                                    <SmallText>{display_rep_scheme(scheme_rounds_list)}</SmallText>
+                                    <SmallText>{displayNumArray(scheme_rounds_list)}</SmallText>
                                 </>
                                 : scheme_type == 3 ?
                                     <>

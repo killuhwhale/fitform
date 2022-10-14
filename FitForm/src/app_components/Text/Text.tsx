@@ -22,6 +22,12 @@ const StyledRegularText = styled.Text`
     text-align: left;
 `;
 
+const StyledMediumText = styled.Text`
+    font-size: 18px;
+    color: ${props => props.theme.palette.text};
+    text-align: left;
+`;
+
 const StyledSmallText = styled.Text`
     font-size: 12px;
     color: ${props => props.theme.palette.text};
@@ -44,8 +50,13 @@ const RegularText: FunctionComponent<TextProps> = (props) => {
 };
 
 
+const MediumText: FunctionComponent<TextProps> = (props) => {
+    return <StyledMediumText style={props.textStyles}>{props.children}</StyledMediumText>
+};
+
+
 const SmallText: FunctionComponent<TextProps> = (props) => {
     return <StyledSmallText style={props.textStyles}>{props.children}</StyledSmallText>
 };
 
-export { TitleText, LargeText, RegularText, SmallText }
+export { TitleText, LargeText, RegularText, MediumText, SmallText }

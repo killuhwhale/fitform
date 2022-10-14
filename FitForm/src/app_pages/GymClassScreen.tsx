@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useRef, useState } from "react";
+import React, { FunctionComponent, useEffect, useRef, useState } from "react";
 import styled from "styled-components/native";
 import { Container, MEDIA_CLASSES, SCREEN_HEIGHT, SCREEN_WIDTH, withSpaceURL } from "../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText } from '../app_components/Text/Text'
@@ -14,6 +14,8 @@ import { Button, IconButton } from "@react-native-material/core";
 import { GymClassCardProps } from "../app_components/Cards/types";
 import { ActionCancelModal } from "./Profile";
 import { Picker } from "@react-native-picker/picker";
+import { filter } from "../utils/algos";
+import { Input } from "./input_pages/gyms/CreateWorkoutScreen";
 export type Props = StackScreenProps<RootStackParamList, "GymClassScreen">
 
 const GymClassScreenContainer = styled(Container)`
@@ -23,7 +25,7 @@ const GymClassScreenContainer = styled(Container)`
     width: 100%;
 `;
 const InfoBG = styled.ImageBackground`
-    height: ${SCREEN_HEIGHT * 0.17}px;
+    height: 100%;
     width: ${SCREEN_WIDTH * 0.92}px;
     resize-mode: cover;
     border-radius: 25px;
@@ -113,9 +115,9 @@ const ManageMembersModal: FunctionComponent<{
                                             setNewMember(itemIndex)
                                         }>
                                         {
-                                            data.map(user => {
+                                            data.map((user, i) => {
                                                 return (
-                                                    <Picker.Item key={user.id} label={user.username} value={user.id} />
+                                                    <Picker.Item key={user.id} label={user.username} value={i} />
                                                 );
                                             })
                                         }
@@ -123,6 +125,7 @@ const ManageMembersModal: FunctionComponent<{
                                     <Button
                                         title="Add Member"
                                         onPress={addNewMember}
+                                        style={{ backgroundColor: theme.palette.lightGray }}
                                     />
 
                                 </View>
@@ -168,7 +171,7 @@ const ManageMembersModal: FunctionComponent<{
                     }
 
                     <View style={{ flexDirection: "row", alignItems: 'center', flex: 2 }}>
-                        <Button onPress={props.onRequestClose} title='Close' />
+                        <Button onPress={props.onRequestClose} title='Close' style={{ backgroundColor: theme.palette.lightGray }} />
                     </View>
                 </View>
             </View>
@@ -256,9 +259,9 @@ const ManageCoachesModal: FunctionComponent<{
                                             setNewCoach(itemIndex)
                                         }>
                                         {
-                                            data.map(user => {
+                                            data.map((user, i) => {
                                                 return (
-                                                    <Picker.Item key={user.id} label={user.username} value={user.id} />
+                                                    <Picker.Item key={user.id} label={user.username} value={i} />
                                                 );
                                             })
                                         }
@@ -266,6 +269,7 @@ const ManageCoachesModal: FunctionComponent<{
                                     <Button
                                         title="Add Coach"
                                         onPress={addNewCoach}
+                                        style={{ backgroundColor: theme.palette.lightGray }}
                                     />
 
                                 </View>
@@ -311,7 +315,7 @@ const ManageCoachesModal: FunctionComponent<{
                     }
 
                     <View style={{ flexDirection: "row", alignItems: 'center', flex: 2 }}>
-                        <Button onPress={props.onRequestClose} title='Close' />
+                        <Button onPress={props.onRequestClose} title='Close' style={{ backgroundColor: theme.palette.lightGray }} />
                     </View>
                 </View>
             </View>
@@ -376,65 +380,111 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
         console.log("Deleted Gym: ", deletedGym)
         setDeleteGymClassModalVisibleVisible(false)
     }
+
+
+
+
+
+
+    const workoutGroups = data?.workout_groups || []
+
+
+    const [stringData, setOgData] = useState<string[]>(workoutGroups ? workoutGroups.map(group => group.title) : [])
+    const [filterResult, setFilterResult] = useState<number[]>(Array.from(Array(stringData.length).keys()).map((idx) => idx))
+    useEffect(() => {
+        setOgData(workoutGroups ? workoutGroups.map(group => group.title) : [])
+        setFilterResult(Array.from(Array(workoutGroups?.length || 0).keys()).map((idx) => idx))
+    }, [data])
+
+    // Access/ send actions
+    const [term, setTerm] = useState("");
+    const filterText = (term: string) => {
+        // Updates filtered data.
+        const { items, marks } = filter(term, stringData, { word: false })
+        setFilterResult(items)
+        setTerm(term)
+    }
     return (
         <GymClassScreenContainer>
-            <View style={{ flex: 1 }}>
-                <View style={{
-                    flexDirection: 'row', alignItems: 'center',
-                    justifyContent: 'center', width: "100%"
-                }}>
-                    <View style={{ flex: 1 }}></View>
-                    <View style={{ flex: 5 }}>
-                        <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}>
-                            <LargeText textStyles={{ textAlign: 'center' }}>
-                                {title} {data?.user_is_gym_owner ? "(Owner)" : data?.user_is_coach ? "(Coach)" : ""}
-                            </LargeText>
-                            <View style={{ alignItems: 'center', paddingLeft: 16 }}>
-                                <SmallText>Coaches: {allCoaches?.length ? allCoaches.length : 0}</SmallText>
-                                <SmallText>Members: {allMembers?.length ? allMembers.length : 0}</SmallText>
-                            </View>
-                        </View>
 
+            <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                justifyContent: 'center', width: "100%", flex: 1
+            }}>
 
-                        <View style={{ flexDirection: 'row', width: '50%' }}>
+                <View style={{ position: 'absolute', width: '90%' }}>
+                    <ScrollView horizontal>
+                        <RegularText textStyles={{ textAlign: 'center' }}>
+                            {title} {data?.user_is_gym_owner ? "(Owner)" : data?.user_is_coach ? "(Coach)" : ""}
+                        </RegularText>
 
-                            {
-                                data?.user_is_gym_owner ?
-
-                                    <Button title="Manage Coaches"
-                                        onPress={() => setShowCoachModal(true)}
-                                    />
-                                    :
-                                    <></>
-                            }
-
-
-                            {
-                                data?.user_is_coach ?
-                                    <Button title="Manage Members"
-                                        onPress={() => setShowMembersModal(true)}
-                                    />
-                                    :
-                                    <></>
-                            }
-
-                        </View>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        {
-                            userData &&
-                                isFavorited(userData.favorite_gym_classes) ?
+                    </ScrollView>
+                </View>
+                <View style={{ position: 'absolute', right: 5 }}>
+                    {
+                        userData &&
+                            isFavorited(userData.favorite_gym_classes) ?
+                            <View style={{ alignItems: 'center' }}>
                                 <IconButton style={{ height: 24 }} icon={<Icon name='star' color="red" style={{ fontSize: 24 }} />} onPress={() => unfavoriteGymClassMutation(favObj)} />
-                                :
+                                <SmallText>Unfavorite</SmallText>
+                            </View>
+                            :
+                            <View style={{ alignItems: 'center' }}>
                                 <IconButton style={{ height: 24 }} icon={<Icon name='star' color="white" style={{ fontSize: 24 }} />} onPress={() => favoriteGymClassMutation(favObj)} />
-                        }
-                    </View>
+                                <SmallText>Favorite</SmallText>
+                            </View>
+                    }
                 </View>
             </View>
 
+            {
+                data?.user_is_gym_owner || data?.user_is_coach ?
+                    <View style={{
+                        flexDirection: 'row', alignItems: 'center',
+                        justifyContent: 'flex-end', width: "100%", flex: 1
+                    }}>
+
+                        {
+                            data?.user_is_gym_owner ?
+                                <View style={{ paddingHorizontal: 8 }}>
+                                    <IconButton
+                                        style={{ height: 24 }}
+                                        icon={
+                                            <Icon name='ios-stopwatch-outline' color={theme.palette.primary.main} style={{ fontSize: 24 }} />
+                                        }
+                                        onPress={() => setShowCoachModal(true)}
+                                    />
+                                    <SmallText>Coaches: {allCoaches?.length ? allCoaches.length : 0}</SmallText>
+
+                                </View>
+                                :
+                                <></>
+                        }
+                        {
+                            data?.user_is_gym_owner || data?.user_is_coach ?
+                                <View style={{ paddingHorizontal: 8 }}>
+                                    <IconButton
+                                        style={{ height: 24 }}
+                                        icon={
+                                            <Icon name='ios-people-outline' color={theme.palette.secondary.main} style={{ fontSize: 24 }} />
+                                        }
+                                        onPress={() => setShowMembersModal(true)}
+                                    />
+                                    <SmallText>Members: {allMembers?.length ? allMembers.length : 0}</SmallText>
+                                </View>
+                                :
+                                <></>
+                        }
+
+
+                    </View>
+                    : <></>
+            }
+
+
             <View style={{ flex: 2 }}>
-                <InfoBG source={{ uri: mainURL }}>
-                    {/* <RegularText textStyles={{ paddingRight: 12 }}>{title}</RegularText> */}
+                <InfoBG source={{ uri: mainURL }} >
+                    <View style={{ width: '100%', height: '25%', position: 'absolute', bottom: 0, backgroundColor: theme.palette.transparent }}></View>
                     <Row style={{ flex: 1, justifyContent: "flex-end", alignItems: "flex-end" }}>
                         <ScrollView style={{ maxHeight: '50%', width: '55%', marginBottom: 8, }}>
                             <RegularText textStyles={{ flex: 2, paddingLeft: 16, }}>{desc}</RegularText>
@@ -453,6 +503,7 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
                         <View style={{ marginVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', width: '100%' }}>
                             <Button
                                 title="Create workout group"
+                                style={{ backgroundColor: theme.palette.lightGray }}
                                 onPress={() => {
                                     navigation.navigate("CreateWorkoutGroupScreen", { ownedByClass: true, ownerID: id });
                                 }}
@@ -474,14 +525,30 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
 
             <View style={{ flex: 4 }}>
                 <Row style={{ color: "black" }}>
-                    <SmallText >Workouts</SmallText>
+                    <View style={{ height: 40, marginTop: 16 }}>
+                        <Input
+                            onChangeText={filterText}
+                            value={term}
+                            containerStyle={{
+                                width: '100%',
+                                backgroundColor: theme.palette.lightGray,
+                                borderRadius: 8,
+                                paddingHorizontal: 8,
+                            }}
+                            leading={
+                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                            }
+                            label=""
+                            placeholder="Search workouts"
+                        />
+                    </View>
                 </Row>
                 {
                     isLoading ?
                         <SmallText>Loading....</SmallText>
                         : isSuccess ?
 
-                            <WorkoutGroupCardList data={data.workout_groups} editable={data.user_can_edit} />
+                            <WorkoutGroupCardList data={workoutGroups.filter((_, i) => filterResult.indexOf(i) >= 0)} editable={data.user_can_edit} />
 
                             : isError ?
 

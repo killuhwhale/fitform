@@ -9,22 +9,35 @@ from rest_framework.parsers import JSONParser, MultiPartParser, FormParser, File
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.response import Response
-from gyms.serializers import (UserSerializer, UserWithoutEmailSerializer, WorkoutCategorySerializer, GymSerializerWithoutClasses, BodyMeasurementsSerializer, Gym_ClassSerializer, GymSerializer, GymClassCreateSerializer,
-                              GymClassSerializer, GymClassSerializerWithWorkouts, WorkoutSerializer,
-                              WorkoutItemSerializer, WorkoutNamesSerializer, CoachesSerializer, ClassMembersSerializer,
-                              WorkoutItemCreateSerializer, CoachesCreateSerializer, ClassMembersCreateSerializer,
-                              GymClassFavoritesSerializer, GymFavoritesSerializer, LikedWorkoutsSerializer, WorkoutGroupsSerializer, WorkoutCreateSerializer, ProfileSerializer)
-from gyms.models import BodyMeasurements, Gyms, GymClasses, WorkoutCategories, Workouts, WorkoutItems, WorkoutNames, Coaches, ClassMembers, GymClassFavorites, GymFavorites, LikedWorkouts, WorkoutGroups
+from gyms.serializers import (
+    CombinedWorkoutGroupsSerializer, CompletedWorkoutCreateSerializer, CompletedWorkoutGroupsSerializer,
+    CompletedWorkoutSerializer, GymClassSerializerWithWorkoutsCompleted, UserSerializer, UserWithoutEmailSerializer,
+    WorkoutCategorySerializer, GymSerializerWithoutClasses,
+    BodyMeasurementsSerializer, Gym_ClassSerializer, GymSerializer, GymClassCreateSerializer,
+    GymClassSerializer, GymClassSerializerWithWorkouts, WorkoutGroupsCreateSerializer, WorkoutSerializer,
+    WorkoutItemSerializer, WorkoutNamesSerializer, CoachesSerializer, ClassMembersSerializer,
+    WorkoutItemCreateSerializer, CoachesCreateSerializer, ClassMembersCreateSerializer,
+    GymClassFavoritesSerializer, GymFavoritesSerializer, LikedWorkoutsSerializer, WorkoutGroupsSerializer,
+    WorkoutCreateSerializer, ProfileSerializer
+)
+from gyms.models import BodyMeasurements, CompletedWorkoutGroups, CompletedWorkoutItems, CompletedWorkouts, Gyms, GymClasses, WorkoutCategories, Workouts, WorkoutItems, WorkoutNames, Coaches, ClassMembers, GymClassFavorites, GymFavorites, LikedWorkouts, WorkoutGroups
 from django.db.models import Q, Exists
 import uuid
 from .s3 import s3Client
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from PIL import Image
 from django.contrib.auth.models import User
-
+from itertools import chain
 s3_client = s3Client()
 
-FILES_KINDS = ['gyms', 'classes', 'workouts', "names", 'users']
+GYM_FILES = 0
+CLASS_FILES = 1
+WORKOUT_FILES = 2
+NAME_FILES = 3
+USER_FILES = 4
+COMP_WORKOUT_FILES = 5
+FILES_KINDS = ['gyms', 'classes', 'workouts',
+               "names", 'users', "completedWorkouts"]
 
 
 def is_gymclass_member(user, gym_class):
@@ -56,7 +69,8 @@ def upload_media(files, parent_id, file_kind, start_id=0):
     names = []
     last_idx = start_id
     for file in files:
-        tmp_name = f"{last_idx}.{file.name[-3:]}"
+        ext = file.name.split(".")[-1]
+        tmp_name = f"{last_idx}.{ext}"
         if s3_client.upload(file, file_kind, parent_id, tmp_name):
             # If successful upload, inc index for file
             last_idx += 1
@@ -288,15 +302,8 @@ class SelfActionPermission(BasePermission):
         return str(request.data.get("user_id")) == str(request.user.id)
 
 
-def convert_file_to_inmem(file_str, name, type):
-    return InMemoryUploadedFile(bytes(file_str, "UTF-8"),
-                                'ImageField',
-                                name + ".jpeg",
-                                type,
-                                sys.getsizeof(file_str), None)
-
-
 class DestroyWithPayloadMixin(object):
+    # Helps return a Response when deleting an entry, React native doesnt like nothing returned...
     def destroy(self, *args, **kwargs):
         serializer = self.get_serializer(self.get_object())
         super().destroy(*args, **kwargs)
@@ -332,12 +339,12 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
             parent_id = gym.id
             if main:
                 main_uploaded = s3_client.upload(
-                    main, FILES_KINDS[0], parent_id, "main")
+                    main, FILES_KINDS[GYM_FILES], parent_id, "main")
                 if not main_uploaded:
                     return Response("Failed to upload main image")
             if logo != '':
                 logo_uploaded = s3_client.upload(
-                    logo, FILES_KINDS[0], parent_id, "logo")
+                    logo, FILES_KINDS[GYM_FILES], parent_id, "logo")
                 if not logo_uploaded:
                     return Response("Failed to upload logo")
 
@@ -403,10 +410,10 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
         parent_id = gym.id
         if main_file:
             s3_client.upload(
-                main_file, FILES_KINDS[0], parent_id, "main")
+                main_file, FILES_KINDS[GYM_FILES], parent_id, "main")
         if logo_file:
             s3_client.upload(
-                logo_file, FILES_KINDS[0], parent_id, "logo")
+                logo_file, FILES_KINDS[GYM_FILES], parent_id, "logo")
 
         return Response("Successfully added media to gym.")
 
@@ -449,8 +456,8 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
                 return Response("Gym class already created. Must delete and reupload w/ media or edit gym class.")
 
             parent_id = gym_class.id
-            s3_client.upload(main, FILES_KINDS[1], parent_id, "main")
-            s3_client.upload(logo, FILES_KINDS[1], parent_id, "logo")
+            s3_client.upload(main, FILES_KINDS[CLASS_FILES], parent_id, "main")
+            s3_client.upload(logo, FILES_KINDS[CLASS_FILES], parent_id, "logo")
 
             return Response(GymClassCreateSerializer(gym_class).data)
         except Exception as e:
@@ -494,24 +501,28 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
         '''
             GymClass view, gets all related data for a GymClass.
         '''
+        user_id = request.user.id
         gym_class = None
         try:
             gym_class: GymClasses = self.queryset.get(id=pk)
         except Exception as e:
             print(e)
             return Response("Invalid class")
-        workouts = []  # Empty queryset
 
         print(is_gymclass_member(request.user, gym_class),
               is_gymclass_coach(request.user, gym_class),
               is_gym_owner(request.user, gym_class.gym.id))
+
         # If user is member or coach, they can see workouts from class...
+        workout_groups = []  # Empty queryset
         if (not gym_class.private or
             is_gymclass_member(request.user, gym_class) or
             is_gymclass_coach(request.user, gym_class) or
                 is_gym_owner(request.user, gym_class.gym.id)):
             # Microservice TODO('Make request to workouts service')
 
+            # For each WG, we want to use its ID and user_id
+            # To see if records exist in CompletedWorkouGroups filter(user_id=user_id, workout_group_id=workout_group.id)
             workout_groups = WorkoutGroups.objects.filter(
                 owner_id=pk, owned_by_class=True)
 
@@ -526,7 +537,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
         print(f"User can edit {user_can_edit}")
 
         return Response({
-            **GymClassSerializerWithWorkouts(gym_class).data,
+            **GymClassSerializerWithWorkoutsCompleted(gym_class, context={'request': request, }).data,
             "user_can_edit": user_can_edit,
             "user_is_gym_owner": user_is_gym_owner,
             "user_is_coach": user_is_coach,
@@ -551,10 +562,10 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
         parent_id = gym_class.id
         if main_file:
             s3_client.upload(
-                main_file, FILES_KINDS[1], parent_id, "main")
+                main_file, FILES_KINDS[CLASS_FILES], parent_id, "main")
         if logo_file:
             s3_client.upload(
-                logo_file, FILES_KINDS[1], parent_id, "logo")
+                logo_file, FILES_KINDS[CLASS_FILES], parent_id, "logo")
 
         return Response("Successfully added media to gym class.")
 
@@ -563,12 +574,17 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
         #     return Response("Failed to add media to workout")
 
 
+########################################################
+#   ////////////////////////////////////////////////   #
+########################################################
+
+
 class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, WorkoutGroupsPermission):
     """
     API endpoint that allows users to be viewed or edited.
     """
-    queryset = Workouts.objects.all()
-    serializer_class = WorkoutSerializer
+    queryset = WorkoutGroups.objects.all()
+    serializer_class = WorkoutGroupsSerializer
     permission_classes = [WorkoutGroupsPermission]
 
     # TODO Create and manage media/ likes for the Group Workout instead of Workout......
@@ -591,7 +607,8 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             return Response("Workout already create. Must delete and reupload w/ media or edit workout.")
 
         parent_id = workout_group.id
-        uploaded_names = upload_media(files, parent_id, FILES_KINDS[2])
+        uploaded_names = upload_media(
+            files, parent_id, FILES_KINDS[WORKOUT_FILES])
         workout_group.media_ids = json.dumps([n for n in uploaded_names])
         workout_group.save()
         return Response(WorkoutGroupsSerializer(workout_group).data)
@@ -623,7 +640,7 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
 
         print("Last id: ", last_id)
         uploaded_names = upload_media(
-            files, workout_group.id, FILES_KINDS[2], start=last_id + 1)
+            files, workout_group.id, FILES_KINDS[WORKOUT_FILES], start=last_id + 1)
         print("Num uploaded: ", uploaded_names)
 
         print("Cur media ids: ", cur_media_ids)
@@ -643,10 +660,10 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
         try:
             workout_group_id = pk
             remove_media_ids = json.loads(request.data.get("media_ids"))
-            workout_group = Workouts.objects.get(id=workout_group_id)
+            workout_group = WorkoutGroups.objects.get(id=workout_group_id)
             cur_media_ids = sorted(json.loads(workout_group.media_ids))
             deleted_ids = delete_media(
-                workout_group.id, remove_media_ids, FILES_KINDS[2])
+                workout_group.id, remove_media_ids, FILES_KINDS[WORKOUT_FILES])
 
             cur_media_ids = list(
                 filter(lambda n: not str(n) in deleted_ids, cur_media_ids))
@@ -658,12 +675,12 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             print(e)
             return Response("Failed to remove media")
 
-    @ action(detail=False, methods=['get'], permission_classes=[])
+    @ action(detail=True, methods=['get'], permission_classes=[])
     def user_workouts(self, request, pk=None):
         try:
             owner_id = request.user.id
             workout_groups: WorkoutGroups = WorkoutGroups.objects.get(
-                owner_id=owner_id, owned_by_class=False)
+                owner_id=owner_id, owned_by_class=False, id=pk)
             # // Workout group is single group with multiple workouts
             return Response(WorkoutGroupsSerializer(workout_groups).data)
         except Exception as e:
@@ -703,6 +720,31 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
         except Exception as e:
             return Response("Failed to unfavorite")
 
+    @ action(detail=False, methods=['POST'], permission_classes=[])
+    def finish(self, request, pk=None):
+        try:
+            user_id = request.user.id
+            workout_group_id = request.data.get("group")
+            workout_group = WorkoutGroups.objects.get(id=workout_group_id)
+
+            # Permisson TODO create permission class
+            if workout_group.owned_by_class:
+                gym_class = GymClasses.objects.get(id=workout_group.owner_id)
+                if (not is_gym_class_owner(request.user, gym_class) and
+                        not is_gymclass_coach(request.user, gym_class)):
+                    return Response({"error": "User is not owner or coach"})
+            elif not str(user_id) == str(workout_group.owner_id):
+                print("User is not owner")
+                return Response({"error": "User is not owner"})
+
+            workout_group.finished = True
+            workout_group.save()
+
+            return Response(WorkoutGroupsSerializer(workout_group).data)
+        except Exception as e:
+            print("Error finished group workout", e)
+            return Response({"error": "Error finished group workout"})
+
 
 class WorkoutsViewSet(viewsets.ModelViewSet, WorkoutPermission):
     """
@@ -711,6 +753,24 @@ class WorkoutsViewSet(viewsets.ModelViewSet, WorkoutPermission):
     queryset = Workouts.objects.all()
     serializer_class = WorkoutSerializer
     permission_classes = [WorkoutPermission]
+
+    def create(self, request):
+        workout_group_id = request.data.get('group')
+
+        workout_group = WorkoutGroups.objects.get(id=workout_group_id)
+        if workout_group.finished:
+            return Response({'error': 'Workout already finsined'})
+
+        data = {**request.data.dict(), 'group_id': workout_group_id}
+        del data['group']
+
+        print('Workout data:', data)
+        workout, new_or_nah = Workouts.objects.get_or_create(**data)
+        if not new_or_nah:
+            print("Not new, we have workout with id: ", workout, workout.id)
+            return Response(WorkoutSerializer(workout).data)
+
+        return Response(WorkoutCreateSerializer(workout).data)
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
@@ -729,6 +789,7 @@ class WorkoutItemsViewSet(viewsets.ModelViewSet, CreateWorkoutItemsPermission):
     @ action(detail=False, methods=['post'], permission_classes=[CreateWorkoutItemsPermission])
     def items(self, request, pk=None):
         try:
+            print("Creating workout items: ", request.data)
             workout_items = json.loads(request.data.get("items"))
             workout_id = request.data.get("workout")
             workout = Workouts.objects.get(id=workout_id)
@@ -760,7 +821,247 @@ class WorkoutItemsViewSet(viewsets.ModelViewSet, CreateWorkoutItemsPermission):
         return WorkoutItemSerializer
 
 
-# TODO() add admin only permission.
+########################################################
+#   ////////////////////////////////////////////////   #
+########################################################
+
+class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = CompletedWorkoutGroups.objects.all()
+    serializer_class = CompletedWorkoutGroupsSerializer
+    permission_classes = []
+
+    def create(self, request):
+        # try:
+
+        data = {**request.data.dict()}
+        print(data)
+        files = request.data.getlist("files", [])
+        workout_group_id = data['workout_group']
+        title = data['title']
+        caption = data['caption']
+        workouts = json.loads(data['workouts'])
+
+        del data['files']
+        del data['workouts']
+        del data['workout_group']
+
+        comp_workout_group, newly_created = CompletedWorkoutGroups.objects.get_or_create(
+            **{**data, 'caption': caption, 'media_ids': [], 'workout_group_id': workout_group_id, 'user_id': request.user.id})
+        # if not newly_created:
+        #     return Response("Workout already create. Must delete and reupload w/ media or edit workout.")
+
+        parent_id = comp_workout_group.id
+        uploaded_names = upload_media(
+            files, parent_id, FILES_KINDS[COMP_WORKOUT_FILES])
+        comp_workout_group.media_ids = json.dumps([n for n in uploaded_names])
+        comp_workout_group.save()
+
+        # from gyms.models import *
+        # CompletedWorkoutGroups.objects.all().delete()
+        allItems = []
+        for w in workouts:
+            workout_items = w['workout_items']
+            workout_id = w['id']
+            del w['id']
+            del w['workout_items']
+            del w['date']
+
+            completed_workout, newly_created = CompletedWorkouts.objects.get_or_create(**{
+                **w,
+                'user_id': request.user.id,
+                'completed_workout_group_id': parent_id,
+                'workout_id': workout_id
+            })
+
+            for item in workout_items:
+                _item = {**item}
+                name = _item['name']
+                del _item['date']
+                del _item['name']
+                del _item['id']
+                del _item['workout']
+                _item['user_id'] = request.user.id
+                _item['completed_workout'] = completed_workout.id
+
+                allItems.append(
+                    CompletedWorkoutItems(
+                        **{
+                            **_item,
+                            "completed_workout": CompletedWorkouts(id=completed_workout.id),
+                            "name": WorkoutNames(id=name['id']),
+                            'user_id': request.user.id
+                        }
+                    )
+                )
+
+        CompletedWorkoutItems.objects.bulk_create(allItems)
+
+        # Get Workouts and Create Completed version
+        # completed_workout_group
+        # workout
+
+        return Response(CompletedWorkoutGroupsSerializer(comp_workout_group).data)
+        # except Exception as e:
+        #     print(e)
+        #     return Response("Failed to create workout")
+
+    def last_id_from_media(self, cur_media_ids: List[str]) -> int:
+        last_id = 0
+        if not cur_media_ids:
+            return last_id
+
+        # Items shoudl remain in order but we will ensure by sorting.
+        # This should have little impact when limiting each workout to 5-7 posts.
+        media_ids = sorted(cur_media_ids, key=lambda p: p.split(".")[0])
+        last_media_id = media_ids[-1]
+        return int(last_media_id.split(".")[0])
+
+    @action(detail=True, methods=['post'], permission_classes=[EditWorkoutMediaPermission])
+    def add_media_to_workout(self, request, pk=None):
+        # try:
+        workout_group_id = pk
+        files = request.data.getlist("files")
+
+        workout_group = CompletedWorkoutGroups.objects.get(id=workout_group_id)
+        cur_media_ids = sorted(json.loads(workout_group.media_ids))
+
+        last_id = self.last_id_from_media(cur_media_ids)
+
+        print("Last id: ", last_id)
+        uploaded_names = upload_media(
+            files, workout_group.id, FILES_KINDS[COMP_WORKOUT_FILES], start=last_id + 1)
+        print("Num uploaded: ", uploaded_names)
+
+        print("Cur media ids: ", cur_media_ids)
+        cur_media_ids.extend(uploaded_names)
+
+        print("Updated Cur media ids: ", cur_media_ids)
+        workout_group.media_ids = json.dumps(cur_media_ids)
+        workout_group.save()
+        return Response("Successfully added media to workout")
+
+        # except Exception as e:
+        #     print(e)
+        #     return Response("Failed to add media to workout")
+
+    @action(detail=True, methods=['delete'], permission_classes=[EditWorkoutMediaPermission])
+    def remove_media_from_workout(self, request, pk=None):
+        try:
+            workout_group_id = pk
+            remove_media_ids = json.loads(request.data.get("media_ids"))
+            workout_group = CompletedWorkoutGroups.objects.get(
+                id=workout_group_id)
+            cur_media_ids = sorted(json.loads(workout_group.media_ids))
+            deleted_ids = delete_media(
+                workout_group.id, remove_media_ids, FILES_KINDS[COMP_WORKOUT_FILES])
+
+            cur_media_ids = list(
+                filter(lambda n: not str(n) in deleted_ids, cur_media_ids))
+            print("Filtered Current media ids: ", cur_media_ids)
+            workout_group.media_ids = json.dumps(cur_media_ids)
+            workout_group.save()
+            return Response("Deleted")
+        except Exception as e:
+            print(e)
+            return Response("Failed to remove media")
+
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def workouts(self, request, pk=None):
+        try:
+            owner_id = request.user.id
+            workout_groups: CompletedWorkoutGroups = CompletedWorkoutGroups.objects.filter(
+                owner_id=owner_id)
+            # // Workout group is single group with multiple workouts
+            return Response(CompletedWorkoutGroupsSerializer(workout_groups).data)
+        except Exception as e:
+            print(e)
+            return Response("Failed get user's workouts.")
+
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def completed_workout_group(self, request, pk=None):
+        try:
+            workout_groups: CompletedWorkoutGroups = CompletedWorkoutGroups.objects.get(
+                id=pk)
+            # // Workout group is single group with multiple workouts
+            return Response(CompletedWorkoutGroupsSerializer(workout_groups).data)
+        except Exception as e:
+            print(e)
+            return Response("Failed get user's workouts.")
+
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def completed_workout_group_by_og_workout_group(self, request, pk=None):
+        og_workout_group_id = pk
+        complete_workout_groups = CompletedWorkoutGroups.objects.filter(
+            user_id=request.user.id,
+            workout_group_id=og_workout_group_id
+        )
+        complete_workout_group = None if len(
+            complete_workout_groups) == 0 else complete_workout_groups[0]
+
+        print("completed_workout_group_by_og_workout_group")
+        return Response(CompletedWorkoutGroupsSerializer(complete_workout_group).data)
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return CompletedWorkoutGroupsSerializer
+        if self.action == 'create':
+            return CompletedWorkoutCreateSerializer
+        return CompletedWorkoutGroupsSerializer
+
+
+class CompletedWorkoutsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet):
+    queryset = CompletedWorkouts.objects.all()
+    serializer_class = CompletedWorkoutSerializer
+    permission_classes = []
+
+
+########################################################
+#   ////////////////////////////////////////////////   #
+########################################################
+
+
+class CombinedWorkoutGroups(DestroyWithPayloadMixin, viewsets.ViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    # queryset = chain(WorkoutGroups.objects.all(),
+    #                  CompletedWorkoutGroups.objects.all())
+
+    serializer_class = CombinedWorkoutGroupsSerializer
+    permission_classes = []
+
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def workouts(self, request, pk=None):
+        user_id = request.user.id
+        wgs = WorkoutGroups.objects.filter(
+            owner_id=user_id, owned_by_class=False)
+        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id)
+        print("Workouts: ", wgs, cwgs, user_id)
+        data = dict()
+        data['created_workout_groups'] = wgs
+        data['completed_workout_groups'] = cwgs
+        return Response(CombinedWorkoutGroupsSerializer(data).data)
+
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def class_workouts(self, request, pk=None):
+        gym_class_id = request.data['gym_class']
+        wgs = WorkoutGroups.objects.filter(
+            owner_id=gym_class_id, owned_by_class=True)
+        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id)
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return CombinedWorkoutGroupsSerializer
+        return CombinedWorkoutGroupsSerializer
+
+########################################################
+#   ////////////////////////////////////////////////   #
+########################################################
+
+
 class WorkoutNamesViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
@@ -802,7 +1103,8 @@ class WorkoutNamesViewSet(viewsets.ModelViewSet):
         workout_name.save()
 
         parent_id = workout_name.id
-        uploaded_names = upload_media(files, parent_id, FILES_KINDS[3])
+        uploaded_names = upload_media(
+            files, parent_id, FILES_KINDS[NAME_FILES])
         workout_name.media_ids = json.dumps([n for n in uploaded_names])
         workout_name.save()
 
@@ -824,7 +1126,7 @@ class WorkoutNamesViewSet(viewsets.ModelViewSet):
 
         print("Last id: ", last_id)
         uploaded_names = upload_media(
-            files, workout.id, FILES_KINDS[3], start=last_id + 1)
+            files, workout.id, FILES_KINDS[NAME_FILES], start=last_id + 1)
         print("Num uploaded: ", uploaded_names)
 
         print("Cur media ids: ", cur_media_ids)
@@ -847,7 +1149,7 @@ class WorkoutNamesViewSet(viewsets.ModelViewSet):
             workout = WorkoutNames.objects.get(id=workout_id)
             cur_media_ids = sorted(json.loads(workout.media_ids))
             deleted_ids = delete_media(
-                workout.id, remove_media_ids, FILES_KINDS[3])
+                workout.id, remove_media_ids, FILES_KINDS[NAME_FILES])
 
             cur_media_ids = list(
                 filter(lambda n: not str(n) in deleted_ids, cur_media_ids))
@@ -973,8 +1275,17 @@ class ProfileViewSet(viewsets.ViewSet):
         workout_groups = WorkoutGroups.objects.filter(
             owner_id=user_id, owned_by_class=False)
         profile_data['user'] = request.user
-        profile_data['workout_groups'] = WorkoutGroups.objects.filter(
+
+        user_id = request.user.id
+        wgs = WorkoutGroups.objects.filter(
             owner_id=user_id, owned_by_class=False)
+        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id)
+
+        data = dict()
+        data['created_workout_groups'] = wgs
+        data['completed_workout_groups'] = cwgs
+
+        profile_data['workout_groups'] = data
         profile_data['favorite_gyms'] = GymFavorites.objects.filter(
             user_id=user_id)
         profile_data['favorite_gym_classes'] = GymClassFavorites.objects.filter(
@@ -982,4 +1293,28 @@ class ProfileViewSet(viewsets.ViewSet):
         profile_data['measurements'] = BodyMeasurements.objects.filter(
             user_id=user_id)
 
-        return Response(ProfileSerializer(profile_data).data)
+        return Response(ProfileSerializer(profile_data,  context={'request': request, }).data)
+
+
+class StatsViewSet(viewsets.ViewSet):
+    '''
+     Returns workouts between a range of dates either for a user's workouts or a classes workouts.
+    '''
+    @ action(detail=True, methods=['GET'], permission_classes=[])
+    def user_workouts(self, request, pk=None):
+        user_id = pk
+        if user_id == "0":
+            user_id = request.user.id
+
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        print(request.query_params, user_id, start_date, end_date)
+        return Response(
+            CompletedWorkoutGroupsSerializer(
+                CompletedWorkoutGroups.objects.filter(
+                    user_id=user_id,
+                    for_date__gte=start_date,
+                    for_date__lte=end_date,
+                ), many=True
+            ).data
+        )

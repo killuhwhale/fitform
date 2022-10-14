@@ -21,6 +21,7 @@ const Header: FunctionComponent = () => {
 
     return (
         <AppBar title="FitForm"
+            contentContainerStyle={{ backgroundColor: theme.palette.darkGray }}
             leading={props => (
                 <IconButton onPress={() => { RootNavigation.navigate("HomePage", {}) }} icon={props => <Icon name="menu" {...props} />} {...props} />
             )}

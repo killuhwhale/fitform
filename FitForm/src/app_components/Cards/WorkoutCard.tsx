@@ -5,62 +5,20 @@ import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
 import { useNavigation } from "@react-navigation/native";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
 import { GymClassCardProps, WorkoutCardProps } from "./types";
-import { displayWeights, ItemString } from "../../app_pages/input_pages/gyms/CreateWorkoutScreen";
+import { displayJList, ItemString } from "../../app_pages/input_pages/gyms/CreateWorkoutScreen";
 import { View } from "react-native";
 import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
 import { AnimatedButton } from "../Buttons/buttons";
-import { useDeleteWorkoutMutation } from "../../redux/api/apiSlice";
+import { useDeleteCompletedWorkoutMutation, useDeleteWorkoutMutation } from "../../redux/api/apiSlice";
 import { WorkoutItemPreviewHorizontalList } from "./cardList";
 
-const CardBG = styled.ImageBackground`
-    resize-mode: cover;
-    height: ${SCREEN_HEIGHT * 0.25}px;
-    width: ${SCREEN_WIDTH * 0.92}px;
-    border-radius: 25px;
-    marginBottom: 12px;
-    border: 1px;
-    border-color: white;
-`;
 
-
-const CardFooterBG = styled.View`
-    resize-mode: cover;
-    border-radius: 25px;
-    background-color: ${props => props.theme.palette.transparent};
-    flex:1;
-    overflow: hidden;
-`;
-
-
-const CardTouchable = styled.TouchableHighlight`
-    height: 100%;
-    border-radius: 25px;
-`;
-
-
-const TouchableView = styled.View`
-    justify-content: space-between;
-    align-items: center;
-    flex: 1;    
-`;
 
 const CardRow = styled.View`
     flex-direction: row;
     justify-content: space-between;
 `;
 
-const MainImage = styled.Image`
-    width: 100%;
-    height: 80%;
-    resize-mode: contain;
-`;
-
-const LogoImage = styled.Image`
-    width: 100%;
-    height: 100%;
-    border-radius: 25px;
-    flex:1;
-`;
 
 
 //Todo 
@@ -75,17 +33,28 @@ const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
     const colWidth = cardWidth * 0.45
 
     const navigation = useNavigation<GymClassScreenProps["navigation"]>();
-    // const handlePress = () => { navigation.navigate("WorkoutScreen", { ...props }) };
-    const handlePress = () => { };
+
     const [deleteWorkout, { isLoading }] = useDeleteWorkoutMutation();
-    const numItems = props.workout_items.length - 1
+    const [deleteCompletedWorkout, { isLoading: deleteCompletedWorkoutIsLoading }] = useDeleteCompletedWorkoutMutation();
+    // console.log("Workout card props: ", props)
+    const isOGWorkout = props.workout_items ? true : false
+    const items = props.workout_items ? props.workout_items : props.completed_workout_items ? props.completed_workout_items : []
+    const numItems = items.length - 1
     const itemsPerCol = 1
     const numCols = Math.max(
         1,
-        Math.ceil((props.workout_items.length) / itemsPerCol)
+        Math.ceil((items.length) / itemsPerCol)
     );
     const navToWorkoutDetail = () => {
         navigation.navigate("WorkoutDetailScreen", props)
+    }
+
+    const _deleteWorkout = () => {
+        if (isOGWorkout) {
+            deleteWorkout(props.id)
+        } else {
+            deleteCompletedWorkout(props.id)
+        }
     }
 
 
@@ -100,7 +69,7 @@ const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
         }}>
             <View style={{ width: '100%', paddingLeft: 8, paddingTop: 8, flex: 1 }}>
                 <WorkoutItemPreviewHorizontalList
-                    data={props.workout_items}
+                    data={items}
                     schemeType={props.scheme_type}
                     itemWidth={colWidth}
                 />
@@ -108,7 +77,7 @@ const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
             </View>
             <View style={{ borderColor: theme.palette.text, borderWidth: props.editable ? 5 : 0, borderRadius: 25, backgroundColor: theme.palette.transparent, flex: 1 }} >
                 <AnimatedButton
-                    onFinish={() => props.editable ? deleteWorkout(props.id) : navToWorkoutDetail()}
+                    onFinish={() => props.editable ? _deleteWorkout() : navToWorkoutDetail()}
                     title="del workout"
                     active={props.editable}
                 >
@@ -119,7 +88,7 @@ const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
                             justifyContent: 'space-between', paddingRight: 16
                         }}>
                             <RegularText>{props.title}  </RegularText>
-                            <RegularText>{displayWeights(props.scheme_rounds)}</RegularText>
+                            <RegularText>{displayJList(props.scheme_rounds)}</RegularText>
                         </View>
                     </CardRow>
                 </AnimatedButton>

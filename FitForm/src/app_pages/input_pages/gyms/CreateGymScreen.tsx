@@ -31,7 +31,7 @@ const Touchable = styled.TouchableHighlight`
 `;
 
 const ImagePicker: FunctionComponent<{ setState(file: Asset): void; title: string; }> = (props) => {
-
+    const theme = useTheme();
     const pickFile = useCallback(async () => {
         try {
             const res = await launchImageLibrary({ mediaType: "mixed" });
@@ -52,7 +52,7 @@ const ImagePicker: FunctionComponent<{ setState(file: Asset): void; title: strin
     }, [props.title]);
     return (
         <View>
-            <Button title={props.title} onPress={pickFile} />
+            <Button title={props.title} onPress={pickFile} style={{ backgroundColor: theme.palette.lightGray }} />
         </View>
     );
 };
@@ -109,7 +109,7 @@ const CreateGymScreen: FunctionComponent<Props> = ({ navigation }) => {
 
     return (
         <PageContainer>
-            <RegularText>Create gym class</RegularText>
+            <LargeText textStyles={{ marginBottom: 8 }}>Create Gym</LargeText>
             <View style={{ height: '100%', width: '100%' }}>
                 <View style={{ flex: 1 }}>
 
@@ -137,7 +137,7 @@ const CreateGymScreen: FunctionComponent<Props> = ({ navigation }) => {
                         title="Select Logo"
                     />
                     <Image source={{ uri: logoFile.uri }} style={{ width: '100%', height: 100, resizeMode: 'contain' }} />
-                    <Button onPress={_createGym.bind(this)} title="Create" />
+                    <Button onPress={_createGym.bind(this)} title="Create" style={{ backgroundColor: theme.palette.lightGray }} />
 
                 </View>
             </View>

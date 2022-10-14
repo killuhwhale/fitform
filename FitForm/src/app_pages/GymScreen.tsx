@@ -1,4 +1,4 @@
-import React, { FunctionComponent } from "react";
+import React, { FunctionComponent, useEffect, useState } from "react";
 import styled from "styled-components/native";
 import { Container, MEDIA_CLASSES, SCREEN_HEIGHT, SCREEN_WIDTH, withSpaceURL } from "../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText } from '../app_components/Text/Text'
@@ -13,6 +13,8 @@ import { useFavoriteGymMutation, useGetGymDataViewQuery, useGetProfileViewQuery,
 import { ScrollView } from "react-native-gesture-handler";
 import { IconButton } from "@react-native-material/core";
 import { GymCardProps } from "../app_components/Cards/types";
+import { filter } from "../utils/algos";
+import { Input } from "./input_pages/gyms/CreateWorkoutScreen";
 export type Props = StackScreenProps<RootStackParamList, "GymScreen">
 
 
@@ -66,6 +68,28 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
     const favObj = new FormData();
     favObj.append('gym', id)
 
+
+    const gymClasses = data?.gym_classes || []
+
+
+    const [stringData, setOgData] = useState<string[]>(gymClasses ? gymClasses.map(gymClass => gymClass.title) : [])
+    const [filterResult, setFilterResult] = useState<number[]>(Array.from(Array(stringData.length).keys()).map((idx) => idx))
+    useEffect(() => {
+        setOgData(gymClasses ? gymClasses.map(gymClass => gymClass.title) : [])
+        setFilterResult(Array.from(Array(gymClasses?.length || 0).keys()).map((idx) => idx))
+    }, [data])
+
+    // Access/ send actions
+    const [term, setTerm] = useState("");
+    const filterText = (term: string) => {
+        // Updates filtered data.
+        const { items, marks } = filter(term, stringData, { word: false })
+        setFilterResult(items)
+        setTerm(term)
+    }
+
+    console.log("String data", stringData)
+    console.log("Filtered results", filterResult)
     return (
         <GymScreenContainer>
             <View style={{ flex: 1 }}>
@@ -93,6 +117,7 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
                 <GymInfoBG source={{ uri: mainURL }}>
                     {/* <RegularText textStyles={{ paddingRight: 12 }}>{title}</RegularText> */}
                     <Row style={{ flex: 1, justifyContent: "flex-end", alignItems: "flex-end" }}>
+                        <View style={{ width: '100%', height: '25%', position: 'absolute', bottom: 0, backgroundColor: theme.palette.transparent }}></View>
                         <ScrollView style={{ maxHeight: '50%', width: '55%', marginBottom: 8 }}>
                             <RegularText textStyles={{ flex: 2, paddingLeft: 16, }}>{desc}</RegularText>
                         </ScrollView>
@@ -109,14 +134,30 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
             </View>
             <View style={{ flex: 5 }}>
                 <Row style={{ color: "black" }}>
-                    <RegularText >Classes</RegularText>
+                    <View style={{ height: 40, marginTop: 16 }}>
+                        <Input
+                            onChangeText={filterText}
+                            value={term}
+                            containerStyle={{
+                                width: '100%',
+                                backgroundColor: theme.palette.lightGray,
+                                borderRadius: 8,
+                                paddingHorizontal: 8,
+                            }}
+                            leading={
+                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                            }
+                            label=""
+                            placeholder="Search classes"
+                        />
+                    </View>
                 </Row>
 
                 {
                     isLoading ?
                         <SmallText>Loading....</SmallText>
                         : isSuccess ?
-                            <GymClassCardList data={data.gym_classes} />
+                            <GymClassCardList data={gymClasses.filter((_, i) => filterResult.indexOf(i) >= 0)} />
 
                             : isError ?
 

@@ -53,12 +53,13 @@ export interface WorkoutItemProps {
     id: number;
     name: WorkoutNameProps;
     ssid: number;
-    distance: number;
-    distance_unit: number;
+
     sets: number;
-    reps: number;
-    duration: number;
+    reps: string;
+    duration: string;
     duration_unit: number;
+    distance: string;
+    distance_unit: number;
     weights: string;
     weight_unit: string;
 
@@ -79,7 +80,8 @@ export interface WorkoutItemListProps {
 
 export interface WorkoutCardProps {
     id: number;
-    workout_items: Array<WorkoutItemProps>;
+    workout_items?: Array<WorkoutItemProps>;
+    completed_workout_items?: Array<WorkoutItemProps>;
     title: string;
     desc: string;
     scheme_type: number;
@@ -99,12 +101,17 @@ export interface WorkoutGroupCardProps {
     id: number;
     title: string;
     caption: string;
-    owner_id: string;
-    owned_by_class: boolean;
+    owner_id?: string; // For workoutgroud
+    owned_by_class?: boolean; // For workoutgroud
+    user_id?: string;  // For completeworkoutgroud
+    workout_group?: WorkoutGroupCardProps; // For completeworkoutgroud
     media_ids: string;
     date: string;
+    for_date: string;
+    finished?: boolean;
     editable?: boolean;
     userCanEdit?: boolean;
+    completed?: boolean;
 }
 
 export interface WorkoutGroupCardListProps {
@@ -120,10 +127,14 @@ export interface WorkoutGroupProps {
     owned_by_class: boolean;
     media_ids: string;
     date: string;
-    workouts: Array<WorkoutCardProps>;
+    workouts?: Array<WorkoutCardProps>;
+    completed_workouts?: Array<WorkoutCardProps>;
+    for_date: string;
+    finished?: boolean;
     user_can_edit?: boolean;
     user_is_gym_owner?: boolean;
     user_is_coach?: boolean;
+    completed?: boolean;
 
 }
 

@@ -11,7 +11,6 @@ import { StackScreenProps } from "@react-navigation/stack";
 import { StyleSheet, View } from "react-native";
 import { useGetGymClassDataViewQuery } from "../redux/api/apiSlice";
 import { WorkoutCardProps, WorkoutItemListProps, WorkoutItemProps } from "../app_components/Cards/types";
-import { displayWeights } from "./input_pages/gyms/CreateWorkoutScreen";
 import { MediaURLSlider } from "../app_components/MediaSlider/MediaSlider";
 export type Props = StackScreenProps<RootStackParamList, "WorkoutNameDetailScreen">
 

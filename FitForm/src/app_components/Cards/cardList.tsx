@@ -12,8 +12,10 @@ import WorkoutRow from "./WorkoutRow";
 import WorkoutGroupCard from "./WorkoutGroupCard";
 import { ItemPanel, ItemString } from "../../app_pages/input_pages/gyms/CreateWorkoutScreen";
 import { NamePanelItem, TagPanelItem, WorkoutStats } from "../../app_pages/WorkoutDetailScreen";
+import { View } from "react-native";
+// import { PickerListItem } from "../../app_pages/StatsScreen";
 
-const StyledList = styled.FlatList`
+export const StyledList = styled.FlatList`
     width:100%;
     padding-left: 12px;
     padding-right: 12px;
@@ -40,6 +42,7 @@ const GymCardList: FunctionComponent<GymCardListProps> = (props) => {
             contentContainerStyle={{
                 alignItems: "center",
             }}
+            ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
             keyExtractor={({ id }: any) => id.toString()}
             renderItem={({ item }: any) => <GymCard  {...item} />}
         />
@@ -58,6 +61,7 @@ const GymClassCardList: FunctionComponent<GymClassCardListProps> = (props) => {
                 alignItems: "center",
                 justifyContent: "space-between",
             }}
+            ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
             keyExtractor={({ id }: any) => id.toString()}
             renderItem={({ item }: any) => <GymClassCard  {...item} />}
         />
@@ -75,6 +79,7 @@ const WorkoutGroupCardList: FunctionComponent<WorkoutGroupCardListProps> = (prop
                 alignItems: "center",
                 justifyContent: "space-between",
             }}
+            ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
             keyExtractor={({ id }: any) => id.toString()}
             renderItem={({ item }: any) => {
                 console.log("WGC item: ", props)
@@ -103,22 +108,7 @@ const WorkoutCardList: FunctionComponent<WorkoutCardListProps> = (props) => {
     );
 };
 
-const WorkoutGroupWorkoutList: FunctionComponent<WorkoutGroupCardListProps> = (props) => {
-    const theme = useTheme();
 
-    return (
-        <StyledList
-            data={props.data}
-            horizontal={false}
-            contentContainerStyle={{
-                alignItems: "center",
-                justifyContent: "space-between",
-            }}
-            keyExtractor={({ id }: any) => id.toString()}
-            renderItem={({ item }: any) => <WorkoutGroupCard  {...item} editable={props.editable} />}
-        />
-    );
-};
 const WorkoutItemCardList: FunctionComponent<WorkoutItemListProps> = (props) => {
     const theme = useTheme();
 
@@ -203,8 +193,30 @@ const WorkoutStatsByNameHorizontalList: FunctionComponent<{ data: WorkoutStats[]
 };
 
 
+// const PickerList: FunctionComponent<{ data: string[], onItemChange(changedData: any) }> = (props) => {
+//     const theme = useTheme();
+
+//     return (
+//         <StyledList
+//             data={props.data}
+//             horizontal={true}
+//             contentContainerStyle={{
+//                 alignItems: "center",
+//                 justifyContent: "space-between",
+//             }}
+//             keyExtractor={() => Math.random().toString()}
+
+//             onViewableItemsChanged={(data) => { props.onItemChange(data) }}
+//             renderItem={({ item }: any) => {
+//                 return <PickerListItem label={item} />
+//             }
+//             }
+//         />
+//     );
+// };
+
 export {
     GymCardList, GymClassCardList, WorkoutCardList, WorkoutItemCardList,
-    WorkoutGroupCardList, WorkoutGroupWorkoutList, WorkoutItemPreviewHorizontalList,
-    WorkoutStatsByTagHorizontalList, WorkoutStatsByNameHorizontalList,
+    WorkoutGroupCardList, WorkoutItemPreviewHorizontalList,
+    WorkoutStatsByTagHorizontalList, WorkoutStatsByNameHorizontalList
 };

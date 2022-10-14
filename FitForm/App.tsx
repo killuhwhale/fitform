@@ -25,28 +25,51 @@ import Uploady from "@rpldy/native-uploady";
 import { BASEURL } from './src/utils/constants';
 
 
+
+const primaryColor = '#007cff'
+const secondaryColor = '#006d77'
+const red = '#e63946'
+
+
+const d_text = "#f1faee"
+const d_lightGray = "#474747"
+const d_gray = "#2c365a"
+const d_darkGray = "#2d2d2d"
+const d_background = "#000814"
+
+
+const l_text = "#283618"
+const l_lightGray = "#a8dadc"
+const l_gray = "#457b9d"
+const l_darkGray = "#1d3557"
+const l_background = "#f1faee"
+
+
+
+
 const DarkTheme: DefaultTheme = {
   borderRadius: '8px',
   palette: {
     primary: {
-      main: "#01d54b", // Green
+      main: primaryColor,
       contrastText: "#fff"
     },
     secondary: {
-      main: "#2c365a",
+      main: secondaryColor,
       contrastText: "#fff"
     },
     tertiary: {
       main: "#007cff",
       contrastText: "#fff"
     },
-    accent: "#fbcd77",
-    text: "#fcfcfc",
-    backgroundColor: "#000",
-    lightGray: '#474747',
-    gray: "#2c365a",
-    darkGray: '#2d2d2d',
+    accent: "#00f5d4",
     transparent: '#34353578',
+
+    text: d_text,
+    backgroundColor: d_background,
+    lightGray: d_lightGray,
+    gray: d_gray,
+    darkGray: d_darkGray,
   }
 
 }
@@ -55,24 +78,24 @@ const LightTheme: DefaultTheme = {
   borderRadius: '8px',
   palette: {
     primary: {
-      main: "#ef835d",
+      main: primaryColor,
       contrastText: "#fff"
     },
     secondary: {
-      main: "#2c365a",
+      main: secondaryColor,
       contrastText: "#fff"
     },
     tertiary: {
       main: "#007cff",
       contrastText: "#fff"
     },
-    lightGray: '#474747',
-    gray: "#2c365a",
-    darkGray: '#2d2d2d',
     accent: "#fbcd77",
-    text: "#000",
-    backgroundColor: "#fff",
     transparent: '#34353578',
+    text: l_text,
+    backgroundColor: l_background,
+    lightGray: l_lightGray,
+    gray: l_gray,
+    darkGray: l_darkGray,
   }
 }
 
@@ -122,14 +145,21 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
   // This either loads the app or login page.
   const { data, isLoading, isSuccess, isError, error } = useGetUserInfoQuery("");
 
-  const [loggedIn, setLoggedIn] = useState((data?.email || data?.username) ? true : false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [needToRefreshToken, setNeedToRefreshToken] = useState(false);
+
+
+  if ((data?.email?.length > 0 || data?.username?.length > 0) && !loggedIn) {
+    setLoggedIn(true)
+  }
+
 
   console.log("Auth: ", loggedIn, isLoading, data)
   auth.listenLogout(() => {
     console.log("Listen for logout")
     setLoggedIn(false);
   });
+
   auth.listenLogin(() => {
     console.log("Listne for login")
     setLoggedIn(true);

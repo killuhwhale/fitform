@@ -30,6 +30,7 @@ import { AnimatedButton } from "../../../app_components/Buttons/buttons";
 import { TouchableHighlight } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import * as RootNavigation from '../../../navigators/RootNavigation'
+import { parseNumList } from "../../WorkoutDetailScreen";
 export type Props = StackScreenProps<RootStackParamList, "CreateWorkoutScreen">
 
 const PageContainer = styled(Container)`
@@ -56,25 +57,23 @@ const PageContainer = styled(Container)`
 
 // rounds: number;
 // intensity: number;
-const nanOrNah = (str: string) => {
+export const nanOrNah = (str: string) => {
     return isNaN(parseInt(str)) ? 0 : parseInt(str);
 }
 
-const numFilter = (str: string) => {
+const numFilter = (str: string): string => {
     const r = str.replace(/[^0-9]/g, '');
     return r
 }
-const numFilterWithSpaces = (str: string) => {
+const numFilterWithSpaces = (str: string): string => {
     const r = str.replace(/[^0-9\s]/g, '');
-    return r.trimStart();
+    const hasSpace = r[r.length - 1] === " "
+    return hasSpace ? r.trim() + " " : r.trim();
 }
 
 const numberInputStyle = StyleSheet.create({
     containerStyle: {
         width: '100%',
-        alignContent: 'center',
-        alignItems: 'center',
-        height: SCREEN_HEIGHT * .05,
     }
 })
 
@@ -99,12 +98,24 @@ interface InputProps {
     placeholder?: string;
     leading?: ReactNode;
     inputStyles?: StyleProp<TextStyle>;
+    isError?: boolean;
+    helperText?: string;
+    editable?: boolean;
+    fontSize?: number;
+    centerInput?: boolean;
+}
+
+interface AddWorkoutItemProps {
+    success: boolean;
+    errorType: number;
+    errorMsg: string;
 }
 
 
 const Input: FunctionComponent<InputProps> = (props) => {
     const theme = useTheme();
     const inpRef = useRef<TTextInput>(null);
+
     const focus = () => {
         console.log("Focus!")
         if (inpRef.current) {
@@ -114,68 +125,124 @@ const Input: FunctionComponent<InputProps> = (props) => {
 
 
     return (
-        <TouchableWithoutFeedback onPress={() => focus()} style={{ width: '100%', height: '100%' }}>
-            <View style={[props.containerStyle]}>
-                <SmallText>{props.label}</SmallText>
-                <NTextInput
-                    style={[{
-                        color: theme.palette.text,
-                        // backgroundColor: 'red',
-                        height: 20,
-                        width: '85%',
+        <View style={[props.containerStyle, { width: '100%', flex: 1 }]}>
 
-                    }, props.inputStyles]}
-                    selectionColor={theme.palette.text}
-                    ref={inpRef}
-                    onChangeText={props.onChangeText}
-                    value={props.value}
-                    placeholder={props.placeholder}
+            <TouchableWithoutFeedback onPress={() => focus()}  >
+                <View style={{ width: '100%', }}>
+                    <View style={{ flexDirection: 'row', width: '100%', height: '100%' }}>
 
-                />
-            </View>
-        </TouchableWithoutFeedback>
+                        <View style={{ width: props.leading ? '10%' : 0, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                            {
+                                props.leading ?
+                                    props.leading
+                                    : <></>
+                            }
+
+                        </View>
+                        <View
+                            style={{
+                                width: props.leading ? '80%' : '100%',
+                                height: '100%',
+                                justifyContent: 'center',
+                                alignItems: props.centerInput ? 'center' : 'flex-start'
+                            }} >
+
+                            <NTextInput
+                                style={
+                                    [props.inputStyles,
+                                    {
+                                        color: theme.palette.text,
+                                        width: '100%',
+                                        fontSize: props.fontSize || 24,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        alignContent: 'center',
+
+                                    }
+                                    ]
+                                }
+
+                                ref={inpRef}
+                                onChangeText={props.onChangeText}
+                                value={props.value}
+                                placeholder={props.placeholder}
+                                placeholderTextColor={theme.palette.text}
+                                selectionColor={theme.palette.text}
+                                editable={props.editable == undefined ? true : props.editable}
+                            />
+
+                        </View>
+                        <View style={{ width: props.leading ? '10%' : 0 }}>
+
+                        </View>
+                    </View>
+                    {
+                        props.isError ?
+                            <View style={{ position: 'absolute', left: props.leading ? 40 : 5, bottom: 0 }} >
+                                <SmallText textStyles={{ color: 'red' }}>{props.helperText}</SmallText>
+                            </View>
+                            : <></>
+                    }
+
+                </View>
+
+            </TouchableWithoutFeedback>
+        </View>
     )
 }
 
-
+// Deprecated
 const StrInput: FunctionComponent<InputProps> = (props) => {
     const theme = useTheme();
     return (
-        <View style={{ flexDirection: "row", backgroundColor: theme.palette.gray, }}>
-            <View style={{ justifyContent: 'center', alignContent: 'center', padding: 8, paddingLeft: 12 }}>
-                {props.leading}
-            </View>
-            <View style={{ width: '100%', height: '100%' }}>
+        <View style={{ flexDirection: "row", backgroundColor: theme.palette.gray, height: '100%' }}>
+
+            <View style={{ width: '100%' }}>
                 <Input
                     onChangeText={props.onChangeText}
                     label={props.label}
                     containerStyle={[props.containerStyle, {
-                        backgroundColor: theme.palette.gray, padding: 6,
+                        padding: 6,
                         borderTopLeftRadius: 8,
                         borderTopRightRadius: 8,
                     }]}
                     value={props.value}
                     placeholder={props.placeholder}
+                    editable={props.editable}
+                    leading={props.leading}
+                    helperText={props.helperText}
 
                 />
+
             </View>
         </View>
     )
 }
 
-
+// Deprecated
 const NumberInput: FunctionComponent<InputProps> = (props) => {
     const theme = useTheme();
+    const errorStyles = props.isError ? {
+        borderBottomWidth: 2,
+        borderColor: 'red',
+    } : {}
     return (
         <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
             <Input
                 onChangeText={props.onChangeText}
                 label={props.label}
-                containerStyle={[props.containerStyle, { backgroundColor: theme.palette.tertiary.main, }]}
+                containerStyle={[props.containerStyle, { backgroundColor: theme.palette.tertiary.main, }, errorStyles]}
                 inputStyles={{ textAlign: 'center' }}
                 value={props.value}
-
+                editable={props.editable}
             />
+            {
+                props.isError ?
+                    <View style={{ position: 'absolute', bottom: '15%', left: '5%' }} >
+                        <SmallText textStyles={{ color: 'red' }}>{props.helperText}</SmallText>
+                    </View>
+                    : <></>
+            }
         </View>
     )
 }
@@ -183,8 +250,8 @@ const NumberInput: FunctionComponent<InputProps> = (props) => {
 
 
 
-const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schemeType: number; }> = (props) => {
-
+const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkoutItemProps; schemeType: number; }> = (props) => {
+    const inputFontSize = 14;
     // Needs duration and SSID feature.
 
     const initWorkoutName = 0;
@@ -220,6 +287,7 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
     const [percentOfWeightUnit, setPercentOfWeightUnit] = useState(initPercentOfWeightUnit);  // Json string list of numbers.
 
     const [sets, setSets] = useState(initSets); // Need this for Standard workouts.
+    // With schemeType Rounds, allow user to enter space delimited list of numbers that must match number of rounds...
     const [reps, setReps] = useState(initReps);
     const [distance, setDistance] = useState(initDistance);
     const [distanceUnit, setDistanceUnit] = useState(initDistanceUnit);
@@ -231,8 +299,11 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
     const [restDuration, setRestDuration] = useState(initRestDuration);
     const [restDurationUnit, setRestDurationUnit] = useState(initRestDurationUnit);
     const [showQuantity, setShowQuantity] = useState(0);
-    const [showRest, setShowRest] = useState(false);
     const QuantityLabels = ["Reps", "Duration", "Distance"]
+
+
+    const [repsSchemeRoundsError, setRepsSchemeRoundsError] = useState(false)
+    const [repSchemeRoundsErrorText, setRepsSchemeRoundsErrorText] = useState("")
 
     // This NumberInput should vary depedning on the Scheme Type
     // For standard, this will be a single number,
@@ -242,11 +313,11 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
 
     const defaultItem = {
         sets: nanOrNah(initSets),
-        reps: nanOrNah(initReps),
-        distance: nanOrNah(initDistance),
+        reps: initReps,
+        distance: initDistance,
         distance_unit: initDistanceUnit,
         ssid: -1,
-        duration: nanOrNah(initDuration),
+        duration: initDuration,
         name: data ? data[initWorkoutName] : {} as WorkoutNameProps,
         duration_unit: initDurationUnit,
         date: "",
@@ -293,20 +364,36 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
         }
 
         console.log("_Adding item: ", item, new_item)
-        props.onAddItem(item)
-        resetDefaultItem()
+
+        // Checks if reps and weights match the repScheme
+        const { success, errorType, errorMsg } = props.onAddItem(item)
+
+        if (success) {
+            resetDefaultItem()
+        }
+        else if (errorType == 0) {
+            // Missing Reps in Scheme, parent should highlight SchemeRounds Input
+            console.log("Add item error: ", errorMsg)
+        }
+        else if (errorType == 1) {
+            // Item reps do not match Reps in Scheme
+            console.log("Add item error: ", errorMsg)
+            setRepsSchemeRoundsError(true)
+            setRepsSchemeRoundsErrorText(errorMsg)
+        }
 
     }
 
-    console.log("Curren item: ", item.weights)
+    console.log("Curren item: ", data)
+
     return (
-        <View style={{ height: SCREEN_HEIGHT * 0.22, borderColor: 'white', borderWidth: 1.5, padding: 2 }}>
-            <View style={{ flex: 1, flexDirection: 'row' }}>
+        <View style={{ height: SCREEN_HEIGHT * 0.28, borderColor: 'white', borderWidth: 1.5, padding: 2 }}>
+            <View style={{ flex: 1, flexDirection: 'row', marginBottom: 4 }}>
                 {
-                    !isLoading ?
+                    !isLoading && isSuccess && data ?
                         <View style={{ justifyContent: 'flex-start', flex: 3, height: '100%' }}>
                             <SmallText>Workout Items</SmallText>
-                            <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
+                            <View style={{ flex: 1, width: '100%' }}>
                                 <Picker
                                     ref={pickerRef}
                                     style={{ flex: 1 }}
@@ -336,7 +423,7 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
                 }
                 <View style={{ flex: 1, }}>
                     <SmallText>Quantity type</SmallText>
-                    <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
+                    <View style={{ flex: 1, width: '100%' }}>
                         <Picker
                             ref={showRepsOrDurationInputRef}
                             style={[pickerStyle.containerStyle, { flex: 1 }]}
@@ -369,222 +456,346 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
 
             </View>
 
-            <View style={{ flexDirection: 'row', }}>
-                <View style={{ alignContent: 'center', flexDirection: 'row', flex: 1 }}>
-                    {
-                        props.schemeType == 0 ?
-                            <NumberInput
-                                containerStyle={numberInputStyle.containerStyle}
-                                label="Sets"
+            <View style={{ flexDirection: 'row', flex: 1, marginBottom: 4 }}>
+                {
+                    props.schemeType == 0 ?
+                        <View style={{ flex: 1 }}>
+                            <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>Sets</SmallText>
+                            <Input
+                                containerStyle={[numberInputStyle.containerStyle, {
+                                    backgroundColor: theme.palette.primary.main,
+                                    borderRightWidth: 1, borderColor: theme.palette.text,
+                                }]}
+
+                                label=""
+                                placeholder="Sets"
+                                centerInput={true}
+                                fontSize={inputFontSize}
                                 value={sets}
+                                inputStyles={{ textAlign: 'center' }}
                                 onChangeText={(text: string) => {
                                     updateItem('sets', nanOrNah(numFilter(text)))
                                     setSets(numFilter(text))
                                 }}
                             />
-                            : <></>
-                    }
-                </View>
+                        </View>
+                        : <></>
+                }
 
-                <View style={{ alignContent: 'center', flexDirection: 'row', flex: 3 }}>
+
+                <View style={{ alignContent: 'center', flex: 3 }}>
                     {
                         showQuantity == 0 ?
-                            <View style={{ flexDirection: 'row', flex: 1 }}>
-
-                                <NumberInput
-                                    containerStyle={numberInputStyle.containerStyle}
-                                    label="Reps"
+                            <View style={{ flex: 1 }}>
+                                <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>Reps</SmallText>
+                                <Input
+                                    containerStyle={[numberInputStyle.containerStyle, {
+                                        backgroundColor: theme.palette.primary.main,
+                                        alignItems: 'center', borderRightWidth: 1, borderColor: theme.palette.text,
+                                    }]}
+                                    label=""
+                                    placeholder="Reps"
+                                    centerInput
+                                    fontSize={inputFontSize}
                                     value={reps}
+                                    inputStyles={{ textAlign: 'center' }}
+                                    isError={repsSchemeRoundsError}
+                                    helperText={repSchemeRoundsErrorText}
                                     onChangeText={(text: string) => {
-                                        updateItem('reps', nanOrNah(numFilter(text)))
-                                        setReps(numFilter(text))
+                                        if (repsSchemeRoundsError) {
+                                            setRepsSchemeRoundsError(false)
+                                            setRepsSchemeRoundsErrorText('')
+                                        }
+                                        if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
+                                            WORKOUT_TYPES[props.schemeType] == REPS_W ||
+                                            WORKOUT_TYPES[props.schemeType] == DURATION_W
+                                        ) {
+                                            updateItem('reps', numFilter(text))
+                                            setReps(numFilter(text))
+                                        } else {
+                                            updateItem('reps', numFilterWithSpaces(text))
+                                            setReps(numFilterWithSpaces(text))
+                                        }
+
                                     }}
                                 />
+
+
+
                             </View>
                             : showQuantity == 1 ?
-                                <View style={{ flexDirection: 'row', width: '100%' }} >
-                                    <View style={{ flex: 1 }} >
-                                        <NumberInput
-                                            containerStyle={numberInputStyle.containerStyle}
-                                            onChangeText={(t) => {
-                                                updateItem('duration', nanOrNah(numFilter(t)))
-                                                setDuration(numFilter(t))
-                                            }}
-                                            value={duration}
-                                            label="Duration"
-                                        />
-                                    </View>
-                                    <View style={{ flex: 1 }} >
-                                        <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
-                                            <Picker
-                                                ref={durationUnitPickRef}
-                                                style={[pickerStyle.containerStyle]}
-                                                itemStyle={[pickerStyle.itemStyle, {
-                                                    color: theme.palette.text,
-                                                    backgroundColor: theme.palette.gray,
-                                                }]}
-                                                selectedValue={durationUnit}
-                                                onValueChange={(itemValue, itemIndex) => {
-                                                    setDurationUnit(itemIndex);
-                                                    updateItem('duration_unit', itemIndex)
-                                                }}>
-                                                {
-                                                    DURATION_UNITS.map((unit, i) => {
-                                                        return (
-                                                            <Picker.Item key={`rest_${unit}`} label={unit} value={i} />
-                                                        );
-                                                    })
-                                                }
-                                            </Picker>
+                                <View style={{ flex: 1 }}>
+                                    <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>Duration</SmallText>
+                                    <View style={{ flexDirection: 'row', width: '100%', flex: 1 }} >
 
+                                        <View style={{ flex: 1 }} >
+                                            <Input
+                                                containerStyle={[numberInputStyle.containerStyle, {
+                                                    backgroundColor: theme.palette.primary.main,
+                                                }]}
+
+                                                label=""
+                                                placeholder="Duration"
+                                                centerInput={true}
+                                                fontSize={inputFontSize}
+                                                value={duration}
+                                                inputStyles={{ textAlign: 'center' }}
+                                                onChangeText={(t) => {
+
+
+                                                    if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
+                                                        WORKOUT_TYPES[props.schemeType] == REPS_W ||
+                                                        WORKOUT_TYPES[props.schemeType] == DURATION_W
+                                                    ) {
+                                                        updateItem('duration', numFilter(t))
+                                                        setDuration(numFilter(t))
+
+                                                    } else {
+                                                        updateItem('duration', numFilterWithSpaces(t))
+                                                        setDuration(numFilterWithSpaces(t))
+                                                    }
+                                                }}
+                                            />
+
+
+                                        </View>
+                                        <View style={{ flex: 1 }} >
+                                            <View style={{ flex: 1, width: '100%' }}>
+                                                <Picker
+                                                    ref={durationUnitPickRef}
+                                                    style={[pickerStyle.containerStyle]}
+                                                    itemStyle={[pickerStyle.itemStyle, {
+                                                        height: "100%",
+                                                        color: theme.palette.text,
+                                                        backgroundColor: theme.palette.gray,
+
+                                                    }]}
+                                                    selectedValue={durationUnit}
+                                                    onValueChange={(itemValue, itemIndex) => {
+                                                        setDurationUnit(itemIndex);
+                                                        updateItem('duration_unit', itemIndex)
+                                                    }}>
+                                                    {
+                                                        DURATION_UNITS.map((unit, i) => {
+                                                            return (
+                                                                <Picker.Item key={`rest_${unit}`} label={unit} value={i} />
+                                                            );
+                                                        })
+                                                    }
+                                                </Picker>
+
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
                                 :
-                                <View style={{ flexDirection: 'row', width: '100%' }} >
-                                    <View style={{ flex: 1 }} >
-                                        <NumberInput
-                                            containerStyle={numberInputStyle.containerStyle}
-                                            label="Distance"
-                                            value={distance}
-                                            onChangeText={(text: string) => {
-                                                updateItem('distance', nanOrNah(numFilter(text)))
-                                                setDistance(numFilter(text))
-                                            }}
-                                        />
-                                    </View>
-                                    <View style={{ flex: 1 }} >
-                                        <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
-                                            <Picker
-                                                ref={distanceUnitPickRef}
-                                                style={[pickerStyle.containerStyle]}
-                                                itemStyle={[pickerStyle.itemStyle, {
-                                                    color: theme.palette.text,
-                                                    backgroundColor: theme.palette.gray,
+                                <View style={{ flex: 1 }}>
+                                    <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>Distance</SmallText>
+                                    <View style={{ flexDirection: 'row', width: '100%', flex: 1 }} >
+                                        <View style={{ flex: 1 }} >
+                                            <Input
+                                                containerStyle={[numberInputStyle.containerStyle, {
+                                                    backgroundColor: theme.palette.primary.main,
                                                 }]}
-                                                selectedValue={distanceUnit}
-                                                onValueChange={(itemValue, itemIndex) => {
-                                                    setDistanceUnit(itemIndex);
-                                                    updateItem('distance_unit', itemIndex)
-                                                }}>
-                                                {
-                                                    DISTANCE_UNITS.map((unit, i) => {
-                                                        return (
-                                                            <Picker.Item key={`rest_${unit}`} label={unit} value={i} />
-                                                        );
-                                                    })
-                                                }
-                                            </Picker>
+
+                                                label=""
+                                                placeholder="Distance"
+                                                centerInput={true}
+                                                fontSize={inputFontSize}
+                                                value={distance}
+                                                inputStyles={{ textAlign: 'center' }}
+                                                onChangeText={(t: string) => {
+                                                    if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
+                                                        WORKOUT_TYPES[props.schemeType] == REPS_W ||
+                                                        WORKOUT_TYPES[props.schemeType] == DURATION_W
+                                                    ) {
+                                                        updateItem('distance', numFilter(t))
+                                                        setDistance(numFilter(t))
+
+                                                    } else {
+                                                        updateItem('distance', numFilterWithSpaces(t))
+                                                        setDistance(numFilterWithSpaces(t))
+                                                    }
+                                                }}
+                                            />
+
+                                        </View>
+                                        <View style={{ flex: 1 }} >
+                                            <View style={{ flex: 1, width: '100%' }}>
+                                                <Picker
+                                                    ref={distanceUnitPickRef}
+                                                    style={[pickerStyle.containerStyle]}
+                                                    itemStyle={[pickerStyle.itemStyle, {
+                                                        height: "100%",
+                                                        color: theme.palette.text,
+                                                        backgroundColor: theme.palette.gray,
+                                                    }]}
+                                                    selectedValue={distanceUnit}
+                                                    onValueChange={(itemValue, itemIndex) => {
+                                                        setDistanceUnit(itemIndex);
+                                                        updateItem('distance_unit', itemIndex)
+                                                    }}>
+                                                    {
+                                                        DISTANCE_UNITS.map((unit, i) => {
+                                                            return (
+                                                                <Picker.Item key={`rest_${unit}`} label={unit} value={i} />
+                                                            );
+                                                        })
+                                                    }
+                                                </Picker>
+                                            </View>
                                         </View>
                                     </View>
+
                                 </View>
 
                     }
                 </View>
 
+                <View style={{ flex: 3 }}>
+                    <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>Weights</SmallText>
+                    <View style={{ flexDirection: 'row', flex: 1 }}>
+                        <View style={{ flex: 2 }}>
+                            <Input
+                                containerStyle={[numberInputStyle.containerStyle, {
+                                    backgroundColor: theme.palette.primary.main,
+                                }]}
 
-                <View style={{ flexDirection: 'row', flex: 3 }}>
-                    <View style={{ flex: 2 }}>
-                        <NumberInput
-                            containerStyle={[numberInputStyle.containerStyle, { width: '100%' }]}
-                            onChangeText={(t) => {
-                                updateItem('weights', numFilterWithSpaces(t))
-                                setWeight(numFilterWithSpaces(t))
-                            }}
-                            value={weight}
-                            label="Weight(s)"
-                        />
+                                label=""
+                                placeholder="Weight(s)"
+                                centerInput={true}
+                                fontSize={inputFontSize}
+                                value={weight}
+                                inputStyles={{ textAlign: 'center' }}
+                                onChangeText={(t) => {
+                                    if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
+                                        WORKOUT_TYPES[props.schemeType] == REPS_W ||
+                                        WORKOUT_TYPES[props.schemeType] == ROUNDS_W
+                                    ) {
+                                        updateItem('weights', numFilterWithSpaces(t))
+                                        setWeight(numFilterWithSpaces(t))
+                                    } else {
+                                        updateItem('weights', numFilter(t))
+                                        setWeight(numFilter(t))
+                                    }
+                                }}
+                            />
+                        </View>
 
+                        <View style={{ flex: 1 }}>
+                            <View style={{ flex: 1, width: '100%' }}>
+                                <Picker
+                                    ref={weightUnitPickRef}
+                                    style={pickerStyle.containerStyle}
+
+                                    itemStyle={[pickerStyle.itemStyle, {
+                                        height: "100%",
+                                        color: theme.palette.text,
+                                        backgroundColor: theme.palette.gray,
+                                    }]}
+                                    selectedValue={weightUnit}
+                                    onValueChange={(itemValue, itemIndex) => {
+                                        setPercentOfWeightUnit(initPercentOfWeightUnit)
+                                        setWeightUnit(itemValue);
+                                        updateItem('weight_unit', itemValue)
+                                    }}>
+                                    {
+                                        WEIGHT_UNITS.map((unit, i) => {
+                                            return (
+                                                <Picker.Item key={`rest_${unit}`} label={unit} value={unit} />
+                                            );
+                                        })
+                                    }
+                                </Picker>
+                            </View>
+
+                        </View>
                     </View>
+                </View>
+            </View>
 
-                    <View style={{ flex: 1 }}>
-                        <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
+
+
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', flex: 1, marginBottom: 4 }}>
+
+                {
+                    weightUnit === "%" ?
+
+
+                        <View style={{ flex: 1 }}>
+                            <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>% of</SmallText>
+                            <Input
+                                containerStyle={[numberInputStyle.containerStyle, {
+                                    backgroundColor: theme.palette.primary.main,
+                                    borderRightWidth: 1, borderColor: theme.palette.text,
+                                }]}
+
+                                label=""
+                                placeholder="% of"
+                                centerInput={true}
+                                fontSize={inputFontSize}
+                                value={percentOfWeightUnit}
+                                inputStyles={{ textAlign: 'center' }}
+                                onChangeText={(t) => {
+                                    updateItem('percent_of', t)
+                                    setPercentOfWeightUnit(t)
+                                }}
+                            />
+
+                        </View>
+
+
+
+
+                        :
+                        <></>
+                }
+
+                <View style={{ flex: 1 }}>
+                    <SmallText textStyles={{ textAlign: 'center', backgroundColor: theme.palette.gray }}>Rest</SmallText>
+                    <View style={{ flex: 1, flexDirection: 'row' }}>
+                        <View style={{ flex: 1 }}>
+                            <Input
+                                containerStyle={[numberInputStyle.containerStyle, {
+                                    backgroundColor: theme.palette.primary.main,
+                                }]}
+
+                                label=""
+                                placeholder="Rest"
+                                centerInput={true}
+                                fontSize={inputFontSize}
+                                value={restDuration}
+                                inputStyles={{ textAlign: 'center' }}
+                                onChangeText={(t) => {
+                                    updateItem('rest_duration', nanOrNah(numFilter(t)))
+                                    setRestDuration(numFilter(t))
+                                }}
+                            />
+                        </View>
+                        <View style={{ flex: 1 }}>
                             <Picker
-                                ref={weightUnitPickRef}
-                                style={pickerStyle.containerStyle}
-
+                                ref={restDurationUnitPickRef}
+                                style={[pickerStyle.containerStyle]}
                                 itemStyle={[pickerStyle.itemStyle, {
+                                    height: "100%",
                                     color: theme.palette.text,
                                     backgroundColor: theme.palette.gray,
                                 }]}
-                                selectedValue={weightUnit}
+
+                                selectedValue={restDurationUnit}
                                 onValueChange={(itemValue, itemIndex) => {
-                                    setPercentOfWeightUnit(initPercentOfWeightUnit)
-                                    setWeightUnit(itemValue);
-                                    updateItem('weight_unit', itemValue)
+                                    setRestDurationUnit(itemIndex);
+                                    updateItem('rest_duration_unit', itemIndex)
                                 }}>
                                 {
-                                    WEIGHT_UNITS.map((unit, i) => {
+                                    DURATION_UNITS.map((unit, i) => {
                                         return (
-                                            <Picker.Item key={`rest_${unit}`} label={unit} value={unit} />
+                                            <Picker.Item key={`rest_${unit}`} label={unit} value={i} />
                                         );
                                     })
                                 }
                             </Picker>
                         </View>
-
-                    </View>
-                </View>
-
-
-
-            </View>
-
-
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-
-
-                {
-                    weightUnit === "%" ?
-                        <View style={{ flexDirection: 'row', flex: 1 }}>
-                            <NumberInput
-                                containerStyle={numberInputStyle.containerStyle}
-                                onChangeText={(t) => {
-                                    updateItem('percent_of', t)
-                                    setPercentOfWeightUnit(t)
-                                }}
-                                value={percentOfWeightUnit}
-                                label="% of"
-                            />
-                        </View>
-                        :
-                        <></>
-                }
-                <View style={{ flexDirection: 'row', flex: 1 }}>
-                    <View style={{ flex: 1 }}>
-                        <NumberInput
-                            containerStyle={numberInputStyle.containerStyle}
-                            onChangeText={(t) => {
-                                updateItem('rest_duration', nanOrNah(numFilter(t)))
-                                setRestDuration(numFilter(t))
-                            }}
-                            value={restDuration}
-                            label="Rest"
-                        />
-
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Picker
-                            ref={restDurationUnitPickRef}
-                            style={[pickerStyle.containerStyle]}
-                            itemStyle={[pickerStyle.itemStyle, {
-                                color: theme.palette.text,
-                                backgroundColor: theme.palette.backgroundColor,
-                            }]}
-
-                            selectedValue={restDurationUnit}
-                            onValueChange={(itemValue, itemIndex) => {
-                                setRestDurationUnit(itemIndex);
-                                updateItem('rest_duration_unit', itemIndex)
-                            }}>
-                            {
-                                DURATION_UNITS.map((unit, i) => {
-                                    return (
-                                        <Picker.Item key={`rest_${unit}`} label={unit} value={i} />
-                                    );
-                                })
-                            }
-                        </Picker>
                     </View>
 
                 </View>
@@ -592,44 +803,65 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): any; schem
             </View>
 
             <View style={{}} >
-                <Button onPress={() => _addItem(item)} title="Add Item" />
+                <Button onPress={() => _addItem(item)} title="Add Item" style={{ backgroundColor: theme.palette.lightGray }} />
             </View>
         </View >
     );
 };
 
-const RepSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; }> = (props) => {
+const RepSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; editable?: boolean; }> = (props) => {
     const theme = useTheme();
 
     return (
-        <View>
-            <StrInput
+        <View style={{ marginBottom: 15, height: 40, }}>
+            <Input
+                placeholder="Reps"
+
+                editable={props.editable}
                 onChangeText={props.onSchemeRoundChange}
                 value={props.schemeRounds}
                 label="Reps"
-                leading={<Icon name="person" color={theme.palette.text} />}
-                containerStyle={{
 
+                containerStyle={{
+                    width: '100%',
+                    backgroundColor: theme.palette.lightGray,
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
                 }}
+                leading={<Icon name="person" color={theme.palette.text} style={{ fontSize: 16 }} />}
             />
+
+
         </View>
     );
 };
 
 
-const RoundSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; }> = (props) => {
+const RoundSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; isError: boolean; editable?: boolean; }> = (props) => {
     const theme = useTheme();
+    const errorStyles = props.isError ? {
+        borderBottomWidth: 2,
+        borderColor: 'red',
+    } : {}
     return (
-        <View>
-            <StrInput
+        <View style={{ marginBottom: 15, height: 40, }}>
+            <Input
+                placeholder="Rounds"
                 onChangeText={props.onSchemeRoundChange}
                 value={props.schemeRounds}
-                label="Rounds"
-                leading={<Icon name="cash" color={theme.palette.text} />}
+                label=""
+                helperText="Please enter number of rounds"
+                isError={props.isError}
+                editable={props.editable}
                 containerStyle={{
-
+                    width: '100%',
+                    backgroundColor: theme.palette.lightGray,
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
                 }}
+                leading={<Icon name="person" color={theme.palette.text} style={{ fontSize: 16 }} />}
             />
+
         </View>
     );
 };
@@ -637,15 +869,20 @@ const RoundSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schem
 const TimeSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; }> = (props) => {
     const theme = useTheme();
     return (
-        <View>
-            <StrInput
+        <View style={{ marginBottom: 15, height: 40, }}>
+            <Input
+                placeholder="Time (mins)"
                 onChangeText={props.onSchemeRoundChange}
                 value={props.schemeRounds}
                 label="Time (mins)"
-                leading={<Icon name="cash" color={theme.palette.text} />}
+                helperText="Please enter number of rounds"
                 containerStyle={{
-
+                    width: '100%',
+                    backgroundColor: theme.palette.lightGray,
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
                 }}
+                leading={<Icon name="person" color={theme.palette.text} style={{ fontSize: 16 }} />}
             />
         </View>
     );
@@ -659,7 +896,7 @@ const StandardSheme: FunctionComponent = (props) => {
     );
 };
 
-const COLORSPALETTE = [
+export const COLORSPALETTE = [
     '#fa4659',
     '#ed93cb',
     '#a3de83',
@@ -709,32 +946,47 @@ const ColorPalette: FunctionComponent<{ onSelect(colorIdx: number); selectedIdx:
     )
 }
 
-const displayWeights = (weights: string) => {
+const displayJList = (weights: string) => {
     return weights.toString().replace('[', '').replace(']', '')
 }
 
+// Converts list of num to stringified list
+const jList = (str: string): string => {
+    const S = str.trim()
+    if (!S) {
+        return JSON.stringify([])
+    }
+    return JSON.stringify(S.split(" ").map((strnum: string) => parseInt(strnum)))
+}
 
 
 const ItemString: FunctionComponent<{ item: WorkoutItemProps; schemeType: number; }> = ({ item, schemeType }) => {
     const theme = useTheme()
-    console.log("ItemStr:", item)
+    // console.log('Item str: ', item, item.reps == '[0]')
+
+
+
     return (
         <View style={{ width: '100%', borderRadius: 8, marginVertical: 6, padding: 6, }}>
             <SmallText >
+
                 {
                     item.sets > 0 && schemeType === 0 ?
-                        `${item.sets} x ${item.reps} `
-                        : item.reps > 0 ?
-                            `${item.reps} x `
-                            : item.distance > 0 ?
-                                `${item.distance} ${DISTANCE_UNITS[item.distance_unit]} `
-                                : item.duration > 0 ?
-                                    `${item.duration} of ${DURATION_UNITS[item.duration_unit]}`
-                                    : ""
+                        `${item.sets} x ` : ''
+                }
+
+                {
+                    item.reps !== '[0]' ?
+                        `${displayJList(item.reps)}  `
+                        : item.distance !== '[0]' ?
+                            `${displayJList(item.distance)} ${DISTANCE_UNITS[item.distance_unit]} `
+                            : item.duration !== '[0]' ?
+                                `${displayJList(item.duration)} ${DURATION_UNITS[item.duration_unit]} of `
+                                : ""
                 }
 
                 {item.name.name}
-                {item.weights.length > 0 ? ` @ ${displayWeights(item.weights)}` : ""}
+                {item.weights.length > 0 ? ` @ ${displayJList(item.weights)}` : ""}
                 {item.weights.length === 0 ? "" : item.weight_unit === "%" ? ` percent of ${item.percent_of}` : ` ${item.weight_unit}`}
                 {item.rest_duration > 0 ? ` Rest: ${item.rest_duration} ${DURATION_UNITS[item.rest_duration_unit]}` : ""}
             </SmallText>
@@ -745,11 +997,13 @@ const ItemString: FunctionComponent<{ item: WorkoutItemProps; schemeType: number
 const ItemPanel: FunctionComponent<{ item: WorkoutItemProps; schemeType: number; itemWidth: number; idx?: number; }> = ({ item, schemeType, itemWidth, idx }) => {
     const theme = useTheme()
 
-    console.log("Itemstrign item: ", item.sets)
     const navToWorkoutNameDetail = () => {
         console.log("Navigating with props:", item)
         RootNavigation.navigate("WorkoutNameDetailScreen", item.name)
     }
+    const itemReps = item.reps == '' || item.reps == '0' ? "0" : item.reps
+    const itemDistance = item.distance == '' || item.distance == '0' ? "0" : item.distance
+    const itemDuration = item.duration == '' || item.duration == '0' ? "0" : item.duration
     return (
         <View style={{
             width: itemWidth,
@@ -758,51 +1012,73 @@ const ItemPanel: FunctionComponent<{ item: WorkoutItemProps; schemeType: number;
             borderRadius: 8,
             marginVertical: 6,
             padding: 6,
-            backgroundColor: theme.palette.tertiary.main,
+            backgroundColor: theme.palette.primary.main,
             marginHorizontal: 8,
             justifyContent: 'center',
             alignItems: 'center'
         }}>
-            <View style={{ position: 'absolute', top: 6, left: 6 }}>
+            <View style={{ position: 'absolute', top: 6, left: 6, flex: 1 }}>
                 <SmallText>{idx}</SmallText>
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
                 <SmallText>
-                    {item.name.name}
+                    {item.name.name} ({item.id})
                 </SmallText>
             </View>
-            <TouchableHighlight
-                onPress={navToWorkoutNameDetail}
-                style={{ width: itemWidth, }}
-                underlayColor={theme.palette.transparent} activeOpacity={0.9}
-            >
-                <View style={{ width: '100%', alignItems: 'center' }}>
-                    <Icon name="menu" color={theme.palette.text} style={{ fontSize: 40 }} />
+            <View style={{ flex: 4, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableHighlight
+                    onPress={navToWorkoutNameDetail}
+                    style={{ width: '100%', }}
+                    underlayColor={theme.palette.transparent} activeOpacity={0.9}
+                >
+                    <View style={{ width: '100%', }}>
+                        <Icon name="menu"
+                            color={
 
+                                schemeType == 0 && item.ssid >= 0 ?
+                                    COLORSPALETTE[item.ssid]
+                                    : theme.palette.text
 
-                </View>
-            </TouchableHighlight>
-            <View style={{ alignSelf: 'flex-start', paddingLeft: 32 }}>
-                <SmallText>
+                            }
+                            style={{ fontSize: 40 }}
+                        />
+                        {
+                            schemeType == 0 && item.ssid >= 0 ?
+                                <SmallText textStyles={{ color: COLORSPALETTE[item.ssid], textAlign: 'center' }}>SS</SmallText>
+                                : <></>
+                        }
+                    </View>
+                </TouchableHighlight>
+            </View>
+            <View style={{ alignSelf: 'center', flex: 2, width: '100%', justifyContent: 'center' }}>
+                <SmallText textStyles={{ textAlign: 'center' }}>
                     {
                         item.sets > 0 && schemeType === 0 ?
-                            `${item.sets} x ${item.reps} `
-                            : item.reps > 0 ?
-                                `${item.reps} reps`
-                                : item.distance > 0 ?
-                                    `${item.distance} ${DISTANCE_UNITS[item.distance_unit]} `
-                                    : item.duration > 0 ?
-                                        `${item.duration} ${DURATION_UNITS[item.duration_unit]} of `
-                                        : ""
+                            `${item.sets} x ` : ''
                     }
+
+                    {
+                        item.reps !== '[0]' ?
+                            `${displayJList(item.reps)}  `
+                            : item.distance !== '[0]' ?
+                                `${displayJList(item.distance)} ${DISTANCE_UNITS[item.distance_unit]} `
+                                : item.duration !== '[0]' ?
+                                    `${displayJList(item.duration)} ${DURATION_UNITS[item.duration_unit]}`
+                                    : ""
+                    }
+
 
                 </SmallText>
 
             </View>
-            <View style={{ alignSelf: 'flex-start', paddingLeft: 32 }}>
-                <SmallText >
-                    {item.weights.length > 0 ? `@ ${displayWeights(item.weights)} ${item.weight_unit === "%" ? '' : item.weight_unit}` : ""}
-                </SmallText>
+            <View style={{ alignItems: 'center', flex: 2, width: '100%' }}>
+                {
+                    item.weights.length > 0 ?
+                        <SmallText >
+                            {`@ ${displayJList(item.weights)} ${item.weight_unit === "%" ? '' : item.weight_unit}`}
+                        </SmallText>
+                        : <></>
+                }
                 {
                     item.weights.length === 0 ? <></> : item.weight_unit === "%" ?
                         <SmallText >
@@ -811,7 +1087,7 @@ const ItemPanel: FunctionComponent<{ item: WorkoutItemProps; schemeType: number;
                         :
                         <></>
                 }
-                <SmallText textStyles={{ alignSelf: 'flex-start' }}>
+                <SmallText textStyles={{ alignSelf: 'center' }}>
 
 
                     {item.rest_duration > 0 ? `Rest: ${item.rest_duration} ${DURATION_UNITS[item.rest_duration_unit]}` : ""}
@@ -824,6 +1100,64 @@ const ItemPanel: FunctionComponent<{ item: WorkoutItemProps; schemeType: number;
     )
 }
 
+
+const verifyWorkoutItem = (_item: WorkoutItemProps, schemeType: number, schemeRounds: string): { success: boolean; errorType: number; errorMsg: string; } => {
+    // For standard workouts: weights must match sets per item...
+    // Reps are single and weights are multiple
+    if (WORKOUT_TYPES[schemeType] == STANDARD_W) {
+        const itemSets = _item.sets
+        const weightList = parseNumList(_item.weights)
+        if (weightList.length > 1 && itemSets != weightList.length) {
+            return { success: false, errorType: 3, errorMsg: 'Weights must match sets' }
+        }
+    }
+
+    // For reps based workout,  weights must match repScheme, repscheme must be entered.
+    // Reps are single and weights are multiple
+    else if (WORKOUT_TYPES[schemeType] == REPS_W) {
+        const weightList = parseNumList(_item.weights)
+        console.log("Edit item verify: ", weightList)
+        if (parseNumList(schemeRounds).length < 1) {
+            return { success: false, errorType: 0, errorMsg: 'Please add number of reps per round' }
+        }
+
+        if (weightList.length > 1 && weightList.length !== parseNumList(schemeRounds).length) {
+            return { success: false, errorType: 2, errorMsg: 'Weights must match repscheme' }
+
+        }
+    }
+
+    // For rounds based workout, reps and weights must match repScheme
+    // Reps and weights are multiple nums
+    else if (WORKOUT_TYPES[schemeType] == ROUNDS_W) {
+        // If scheme rounds have not been entered....
+        console.log("Current shcemeRounds ", schemeRounds)
+        if (schemeRounds.length == 0) {
+
+            return { success: false, errorType: 0, errorMsg: 'Please add number of rounds' }
+        }
+
+        // IF item does not match number of rounds
+        // Ensure reps is 1 number of matches the number of roungs
+        // Eg 5 Rounds => Reps [1] or [5,5,3,3,1] (different sets for each round)
+
+        console.log("Bad item reps? ", _item.reps)
+        const itemRepsList = parseNumList(_item.reps)
+        const itemWeightsList = parseNumList(_item.weights)
+
+        if (itemRepsList.length > 1 && itemRepsList.length !== parseInt(schemeRounds)) {
+            console.log("Dont add item!", itemRepsList, schemeRounds)
+            return { success: false, errorType: 1, errorMsg: 'Match rounds' }
+        }
+        if (itemWeightsList.length > 1 && itemWeightsList.length !== parseInt(schemeRounds)) {
+            console.log("Dont add item!", itemWeightsList, schemeRounds)
+            return { success: false, errorType: 1, errorMsg: 'Match rounds' }
+        }
+    }
+    // For Time Based workouts, reps and weights should just be single, no check required.
+    // Reps and weights are single
+    return { success: true, errorType: -1, errorMsg: '' }
+}
 
 const CreateWorkoutScreen: FunctionComponent<Props> = ({
     navigation, route: { params: { workoutGroupID, workoutGroupTitle, schemeType } }
@@ -839,9 +1173,11 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
     const [items, setItems] = useState([] as WorkoutItemProps[])
     const [showAddSSID, setShowAddSSID] = useState(false);
     const [curColor, setCurColor] = useState(-1);
-
     const [createWorkout, { isLoading: workoutIsLoading }] = useCreateWorkoutMutation();
     const [createWorkoutItem, { isLoading: workoutItemIsLoading }] = useCreateWorkoutItemsMutation();
+
+    const [schemeRoundsError, setSchemeRoundsError] = useState(false)
+
 
     const _createWorkoutWithItems = async () => {
 
@@ -854,7 +1190,7 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
         workoutData.append('scheme_type', schemeType);
         workoutData.append('scheme_rounds', schemeRounds);
 
-        console.log("Creatting workout: ", workoutData)
+        console.log("Creatting workout with Group ID and Data: ", workoutGroupID, workoutData)
 
 
         try {
@@ -872,7 +1208,7 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
             const createdItems = await createWorkoutItem(data).unwrap();
             console.log("Workout item res", createdItems)
 
-
+            // TODO handle errors 
             if (createdItems) {
                 navigation.goBack()
             }
@@ -883,12 +1219,8 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
         // TODO possibly dispatch to refresh data
     }
 
-    const jList = (str: string) => {
-        if (!str) {
-            return ""
-        }
-        return JSON.stringify(str.trim().split(" ").map((str: string) => parseInt(str)))
-    }
+
+
 
     const removeItem = (idx) => {
         const _items = [...items]
@@ -896,12 +1228,27 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
         setItems(_items)
     }
 
-    const addWorkoutItem = (item: WorkoutItemProps) => {
+    const addWorkoutItem = (item: WorkoutItemProps): AddWorkoutItemProps => {
         const _item = { ...item }
 
+        const { success, errorType, errorMsg } = verifyWorkoutItem(_item, schemeType, schemeRounds)
+
+        if (!success && errorType === 0) {
+            setSchemeRoundsError(true)
+            return { success, errorType, errorMsg }
+        }
+        if (schemeRoundsError) {
+            setSchemeRoundsError(false)
+        }
+
         _item.weights = jList(_item.weights)
+        _item.reps = jList(_item.reps)
+        _item.duration = jList(_item.duration)
+        _item.distance = jList(_item.distance)
+
         console.log("Adding item: ", _item);
         setItems([...items, _item])
+        return { success: true, errorType: -1, errorMsg: '' }
     }
 
     const removeItemSSID = (idx) => {
@@ -930,31 +1277,44 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
     return (
         <PageContainer>
             <View style={{ margin: 5 }}>
-                <RegularText>{workoutGroupTitle}</RegularText>
+                <RegularText>{workoutGroupTitle} ({workoutGroupID})</RegularText>
 
             </View>
+
             <View style={{ height: '100%', width: '100%' }}>
-                <View style={{ flex: 1 }}>
-                    <View style={{ marginBottom: 5 }}>
-                        <StrInput
+                <View style={{ marginBottom: 15, height: 40, }}>
+                    <Input
+                        onChangeText={(t) => setTitle(t)}
+                        value={title}
+                        label=""
+                        placeholder="Title"
+                        containerStyle={{
+                            width: '100%',
+                            backgroundColor: theme.palette.lightGray,
+                            borderRadius: 8,
+                            paddingHorizontal: 8,
+                        }}
+                        leading={<Icon name="person" color={theme.palette.text} style={{ fontSize: 16 }} />}
+                    />
+                </View>
 
-                            onChangeText={(t) => setTitle(t)}
-                            value={title}
-                            label="Title"
-                            containerStyle={{}}
-
-                            leading={<Icon name="person" color={theme.palette.text} />}
-                        />
-
-                    </View>
-                    <StrInput
-                        label="Description"
+                <View style={{ marginBottom: 5, height: 40 }}>
+                    <Input
+                        label=""
+                        placeholder="Description"
                         value={desc}
                         onChangeText={(d) => setDesc(d)}
-                        containerStyle={{}}
-                        leading={<Icon name="person" color={theme.palette.text} />}
+                        containerStyle={{
+                            width: '100%',
+                            backgroundColor: theme.palette.lightGray,
+                            borderRadius: 8,
+                            paddingHorizontal: 8,
+                        }}
+                        leading={<Icon name="person" color={theme.palette.text} style={{ fontSize: 16 }} />}
                     />
 
+                </View>
+                <View>
                     {
                         WORKOUT_TYPES[schemeType] == STANDARD_W ?
                             <>
@@ -972,7 +1332,17 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
                                     <>
                                         <SmallText>Number of Rounds</SmallText>
                                         <RoundSheme
-                                            onSchemeRoundChange={(t) => setSchemeRounds(numFilter(t))}
+                                            onSchemeRoundChange={
+                                                (t) => {
+                                                    // Reset
+                                                    if (schemeRoundsError) {
+                                                        setSchemeRoundsError(false)
+                                                    }
+                                                    setSchemeRounds(numFilter(t))
+                                                }
+                                            }
+                                            editable={items.length === 0}
+                                            isError={schemeRoundsError}
                                             schemeRounds={schemeRounds}
                                         />
                                     </>
@@ -1105,7 +1475,7 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
                 </View>
                 <View style={{ flex: 1 }}>
 
-                    <Button onPress={_createWorkoutWithItems.bind(this)} title="Create" />
+                    <Button onPress={_createWorkoutWithItems.bind(this)} title="Create" style={{ backgroundColor: theme.palette.lightGray }} />
 
                 </View>
             </View>
@@ -1114,4 +1484,8 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
 }
 
 export default CreateWorkoutScreen;
-export { ItemString, displayWeights, ItemPanel }
+export {
+    ItemString, ItemPanel, StrInput, NumberInput, numberInputStyle, Input,
+    numFilter, numFilterWithSpaces, displayJList, jList, verifyWorkoutItem,
+}
+

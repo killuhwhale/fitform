@@ -1,7 +1,7 @@
 import React, { FunctionComponent, useState } from "react";
 import styled from "styled-components/native";
 import { Container } from "../app_components/shared";
-import { SmallText, RegularText, LargeText, TitleText } from '../app_components/Text/Text'
+import { SmallText, RegularText, LargeText, TitleText, MediumText } from '../app_components/Text/Text'
 import { IconButton, Button } from "@react-native-material/core";
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -9,13 +9,13 @@ import { useTheme } from 'styled-components'
 import { useAppSelector, useAppDispatch } from '../redux/hooks'
 import { useDeleteGymMutation, useGetProfileViewQuery, useGetUserGymsQuery } from "../redux/api/apiSlice";
 
-import { WorkoutGroupWorkoutList } from "../app_components/Cards/cardList"
-import WorkoutGroupCard from "../app_components/Cards/WorkoutGroupCard"
+import { WorkoutGroupCardList } from "../app_components/Cards/cardList"
 
 import RootStack, { RootStackParamList } from "../navigators/RootStack";
+
 import * as RootNavigation from '../navigators/RootNavigation'
 import { StackScreenProps } from "@react-navigation/stack";
-import { Modal, StyleSheet, View } from "react-native";
+import { Modal, StyleSheet, TouchableHighlight, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import AuthManager from "../utils/auth";
 import { GymCardProps, GymClassCardProps, WorkoutCardProps, WorkoutGroupCardProps } from "../app_components/Cards/types";
@@ -231,29 +231,10 @@ const WorkoutsPanel: FunctionComponent<WorkoutPanelProps> = (props) => {
 
 
     return (
-        <WorkoutGroupWorkoutList
+        <WorkoutGroupCardList
             data={props.data}
             editable={true}
         />
-
-        // <View style={{ width: '100%' }}>
-        //     {
-        //         props.data.map(workoutGroup => {
-        //             const { id, date, workouts, title, caption } = workoutGroup;
-        //             return (
-        //                 <View style={{ height: 50, justifyContent: 'space-between' }} key={id}>
-        //                     <Touchable key={id} underlayColor={theme.palette.transparent}
-        //                         activeOpacity={0.9} onPress={() => goToGymClass(id)}>
-        //                         <View style={{ flexDirection: "row", alignItems: 'center', }} >
-        //                             <IconButton onPress={() => { }} color={theme.palette.text} icon={props => <Icon name="star" {...props} />} />
-        //                             <SmallText>{title} - {caption}</SmallText>
-        //                         </View>
-        //                     </Touchable>
-        //                 </View>
-        //             );
-        //         })
-        //     }
-        // </View>
     );
 };
 
@@ -276,8 +257,8 @@ export const ActionCancelModal: FunctionComponent<{
                         <RegularText>{props.modalText}</RegularText>
                     </View>
                     <View style={{ flexDirection: "row", alignItems: 'center', }}>
-                        <Button onPress={props.onRequestClose} title={props.closeText} style={{ marginRight: 4 }} />
-                        <Button onPress={props.onAction} title={props.actionText} style={{ marginLeft: 4 }} />
+                        <Button onPress={props.onRequestClose} title={props.closeText} style={{ marginRight: 4, backgroundColor: theme.palette.lightGray }} />
+                        <Button onPress={props.onAction} title={props.actionText} style={{ marginLeft: 4, backgroundColor: theme.palette.lightGray }} />
                     </View>
                 </View>
             </View>
@@ -285,7 +266,7 @@ export const ActionCancelModal: FunctionComponent<{
     );
 };
 const ProfileSettingsModal: FunctionComponent<{
-    modalVisible: boolean; onRequestClose(): void; nav: Props;
+    modalVisible: boolean; onRequestClose(): void;
 }> = (props) => {
     const theme = useTheme();
     const auth = AuthManager;
@@ -307,32 +288,89 @@ const ProfileSettingsModal: FunctionComponent<{
                     <View style={{ flexDirection: "row", alignItems: 'center', marginBottom: 12, flex: 1 }}>
                         <RegularText>Settings</RegularText>
                     </View>
-                    <View style={{ alignItems: 'flex-end', flex: 2, width: "100%" }}>
-                        <IconButton onPress={() => { logout() }} color={theme.palette.text} icon={props => <Icon name="log-out" {...props} />} />
+
+
+                    <View style={{ alignItems: 'flex-end', width: "100%", marginBottom: 32 }}>
+                        <IconButton onPress={() => { logout() }} color='red' icon={props => <Icon name="log-out" {...props} />} />
                         <SmallText>Logout</SmallText>
                     </View>
-                    <View style={{ alignItems: 'center', flex: 20 }}>
-                        <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                            <Button onPress={() => {
-                                props.nav.navigation.navigate("CreateGymScreen");
+
+                    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-evenly', marginBottom: 32 }}>
+
+                        <TouchableHighlight
+                            onPress={() => {
+                                RootNavigation.navigate("CreateGymScreen", {});
                                 props.onRequestClose()
-                            }} title="Create gym" />
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                            <Button onPress={() => {
-                                props.nav.navigation.navigate("CreateGymClassScreen");
+                            }}
+                        >
+                            <View style={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 16,
+                                height: 92,
+                                width: 124,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <MediumText textStyles={{ textAlign: 'center' }}>
+                                    Create gym
+                                </MediumText>
+                            </View>
+                        </TouchableHighlight>
+
+
+
+
+
+                        <TouchableHighlight
+                            onPress={() => {
+                                RootNavigation.navigate("CreateGymClassScreen", {});
                                 props.onRequestClose()
-                            }} title="Create gym class" />
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                            <Button onPress={() => {
-                                props.nav.navigation.navigate("CreateWorkoutGroupScreen", { ownedByClass: false });
+                            }}
+                        >
+                            <View style={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 16,
+                                height: 92,
+                                width: 124,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <MediumText textStyles={{ textAlign: 'center' }}>
+                                    Create gym class
+                                </MediumText>
+                            </View>
+                        </TouchableHighlight>
+
+
+
+
+                    </View>
+                    <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-evenly', marginBottom: 32 }}>
+
+                        <TouchableHighlight
+                            onPress={() => {
+                                RootNavigation.navigate("CreateWorkoutGroupScreen", { ownedByClass: false });
                                 props.onRequestClose()
-                            }} title="Create personal workout group" />
-                        </View>
+                            }}
+                        >
+                            <View style={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 16,
+                                height: 92,
+                                width: 124,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+
+                            }}>
+                                <MediumText textStyles={{ textAlign: 'center' }}>
+                                    Create personal workout group
+                                </MediumText>
+                            </View>
+                        </TouchableHighlight>
+
                     </View>
                     <View style={{ flexDirection: "row", alignItems: 'center', flex: 2 }}>
-                        <Button onPress={props.onRequestClose} title='Close' />
+                        <Button onPress={props.onRequestClose} title='Close' style={{ backgroundColor: theme.palette.lightGray }} />
                     </View>
                 </View>
             </View>
@@ -340,9 +378,9 @@ const ProfileSettingsModal: FunctionComponent<{
     );
 };
 
-const Profile: FunctionComponent<Props> = (nav) => {
+const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
     const theme = useTheme();
-    const { navigation, route } = nav;
+
     // Access value
     const count = useAppSelector((state) => state.counter.value)
     // Split this query up,  use separate query for Favorites so we can use it in other places
@@ -385,26 +423,41 @@ const Profile: FunctionComponent<Props> = (nav) => {
                                 <IconButton onPress={() => setModalVisible(!modalVisible)} color={theme.palette.text} icon={props => <Icon name="menu" {...props} />} />
                             </View>
 
-                            <View style={{ flex: 1, width: "100%", marginBottom: 16 }}>
-                                <UserInfoPanel user={data.user} />
-                            </View>
-
-                            <View style={{ flex: 3, width: "100%" }}>
-                                <SmallText>Favorite Gyms</SmallText>
-                                <ScrollView>
-                                    <FavGymsPanel data={data.favorite_gyms} />
-                                </ScrollView>
-
-                            </View>
-                            <View style={{ flex: 3, width: "100%" }}>
-                                <SmallText> Favorite Gym Classess</SmallText>
-                                <ScrollView>
-                                    <FavGymClassesPanel data={data.favorite_gym_classes} />
-                                </ScrollView>
+                            <View style={{ flex: 2, width: "100%", marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ width: '50%' }}>
+                                    <UserInfoPanel user={data.user} />
+                                </View>
+                                <View style={{ width: '50%' }}>
+                                    <Button title="Stats" onPress={() => navigation.navigate("StatsScreen")} style={{ backgroundColor: theme.palette.lightGray }} />
+                                </View>
                             </View>
 
                             {
-                                usersGyms ?
+                                data.favorite_gyms?.length ?
+                                    <View style={{ flex: 3, width: "100%" }}>
+                                        <SmallText>Favorite Gyms</SmallText>
+                                        <ScrollView>
+                                            <FavGymsPanel data={data.favorite_gyms} />
+                                        </ScrollView>
+                                    </View>
+                                    : <></>
+                            }
+
+                            {
+                                data.favorite_gym_classes?.length ?
+                                    <View style={{ flex: 3, width: "100%" }}>
+                                        <SmallText> Favorite Gym Classess</SmallText>
+                                        <ScrollView>
+                                            <FavGymClassesPanel data={data.favorite_gym_classes} />
+                                        </ScrollView>
+                                    </View>
+                                    : <></>
+                            }
+
+
+
+                            {
+                                usersGyms && usersGyms.length ?
                                     <View style={{ flex: 3, width: "100%" }}>
                                         <RegularText>My Gyms</RegularText>
                                         <ScrollView style={{ width: '100%' }}>
@@ -419,7 +472,7 @@ const Profile: FunctionComponent<Props> = (nav) => {
 
                             <View style={{ flex: 10, width: "100%" }}>
                                 <RegularText>My Workouts</RegularText>
-                                <WorkoutsPanel data={data.workout_groups} />
+                                <WorkoutsPanel data={[...data.workout_groups.created_workout_groups, ...data.workout_groups.completed_workout_groups]} />
 
                             </View>
 
@@ -428,7 +481,6 @@ const Profile: FunctionComponent<Props> = (nav) => {
                             <ProfileSettingsModal
                                 modalVisible={modalVisible}
                                 onRequestClose={() => setModalVisible(false)}
-                                nav={nav}
                             />
 
                             <ActionCancelModal

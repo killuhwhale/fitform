@@ -66,6 +66,9 @@ class WorkoutGroups(models.Model):
     owner_id = models.CharField(
         max_length=100, blank=False, null=False)  # Class ID or USER ID
     owned_by_class = models.BooleanField(default=True)
+    # Allows Workouts to be added to Group when false
+    finished = models.BooleanField(default=False)
+    for_date = models.DateTimeField()  # Date the Workout is intended for
     title = models.CharField(max_length=50, blank=False, null=False)
     caption = models.CharField(max_length=250)
     media_ids = models.CharField(max_length=1000, default='[]')  # json
@@ -85,6 +88,9 @@ class Workouts(models.Model):
     scheme_rounds = models.CharField(
         max_length=100, default="[]")  # Json stringified list [] rounds/ rep-scheme (not used in weightlifting scheme)
     date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['group', 'title']]
 
 
 class WorkoutCategories(models.Model):
@@ -109,13 +115,73 @@ class WorkoutItems(models.Model):
         WorkoutNames, on_delete=models.CASCADE)                # Squat
     ssid = models.IntegerField(default=-1, blank=True)
 
-    distance = models.FloatField(default=0.0)
-    distance_unit = models.IntegerField(default=0)
     # removed:   intensity, rounds
     sets = models.IntegerField(default=0)                      # 3
-    reps = models.IntegerField(default=0)                      # 5
-    duration = models.FloatField(default=0.0)                  # None
+    reps = models.CharField(max_length=140, default="0")       # 5
+    duration = models.CharField(max_length=140, default="0")   # None
     duration_unit = models.IntegerField(default=0)             # None
+    distance = models.CharField(max_length=140, default="0")
+    distance_unit = models.IntegerField(default=0)
+    weights = models.CharField(
+        max_length=400, default="[]")   # [100, 155, 185]
+    weight_unit = models.CharField(max_length=2, default='kg')  # None
+    rest_duration = models.FloatField(default=0.0)                  # None
+    rest_duration_unit = models.IntegerField(default=0)             # None
+    percent_of = models.CharField(max_length=20, default='1RM')  # None
+    order = models.IntegerField()             # None
+    date = models.DateTimeField(auto_now_add=True)
+
+# from gyms.models import *
+# CompletedWorkoutGroups.objects.all().delete()
+
+
+class CompletedWorkoutGroups(models.Model):
+    # If workout_Group get deleted, we need the title.....
+    workout_group = models.ForeignKey(
+        WorkoutGroups, on_delete=models.DO_NOTHING)
+    user_id = models.CharField(max_length=100)
+    title = models.CharField(max_length=250)
+    caption = models.CharField(max_length=250)
+    media_ids = models.CharField(max_length=1000, default='[]')  # json
+    date = models.DateTimeField(auto_now_add=True)
+    for_date = models.DateTimeField()  # Date the Workout is intended for
+
+    class Meta:
+        unique_together = [["workout_group", "user_id"]]
+
+
+class CompletedWorkouts(models.Model):
+    completed_workout_group = models.ForeignKey(
+        CompletedWorkoutGroups, on_delete=models.CASCADE)
+    workout = models.ForeignKey(Workouts, on_delete=models.CASCADE)
+    user_id = models.CharField(max_length=100)
+    title = models.CharField(max_length=50)  # duplicated from OG
+    desc = models.CharField(max_length=250)  # duplicated from OG
+    # Schemas: Round, Rep, Weightlifting
+    scheme_type = models.IntegerField(default=0)  # duplicated from OG
+    scheme_rounds = models.CharField(
+        max_length=100, default="[]")  # duplicated from OG
+    date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [["completed_workout_group", "workout", "user_id"]]
+
+
+class CompletedWorkoutItems(models.Model):
+    user_id = models.CharField(max_length=100)
+    completed_workout = models.ForeignKey(
+        CompletedWorkouts, on_delete=models.CASCADE)
+    name = models.ForeignKey(
+        WorkoutNames, on_delete=models.CASCADE)                # Squat
+    ssid = models.IntegerField(default=-1, blank=True)
+
+    # removed:   intensity, rounds
+    sets = models.IntegerField(default=0)                      # 3
+    reps = models.CharField(max_length=140, default="0")       # 5
+    duration = models.CharField(max_length=140, default="0")   # None
+    duration_unit = models.IntegerField(default=0)             # None
+    distance = models.CharField(max_length=140, default="0")
+    distance_unit = models.IntegerField(default=0)
     weights = models.CharField(
         max_length=400, default="[]")   # [100, 155, 185]
     weight_unit = models.CharField(max_length=2, default='kg')  # None

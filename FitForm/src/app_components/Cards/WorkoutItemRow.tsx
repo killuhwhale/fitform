@@ -58,10 +58,9 @@ const LogoImage = styled.Image`
     border-radius: 25px;
     flex:1;
 `;
-const displayWeights = (weights_list) => {
-    let str = '';
-    weights_list.forEach(num => str += `${num}, `)
-    return str.slice(0, -2)
+const displayNumArray = (weightList) => {
+
+    return weightList.toString().slice(1, -1)
 }
 const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
     const theme = useTheme();
@@ -72,7 +71,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
     const handlePress = () => { };
     const { duration, duration_unit, reps, rest_duration, rest_duration_unit, sets, weight_unit, weights, name } = props
     const weights_list: Array<number> = JSON.parse(weights)
-    const weightStr = displayWeights(weights_list)
+    const weightStr = displayNumArray(weights_list)
     const weight_units: Set<string> = new Set(["kg", "lb"]);
     const percentage_units: Set<string> = new Set(["%"]);
     const bodyweight_units: Set<string> = new Set(["bw"]);
@@ -93,7 +92,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
                 <TouchableView>
                     <CardRow>
                         <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >{name.name} </SmallText>
-                        {duration > 0 ?
+                        {duration.length ?
                             <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >Duration {duration} {duration_unit}</SmallText>
                             :
                             <></>
@@ -104,7 +103,7 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
                             :
                             <></>
                         }
-                        {reps > 0 ?
+                        {reps ?
                             <SmallText textStyles={{ paddingLeft: 4, paddingTop: 8 }} >Reps {reps} </SmallText>
                             :
                             <></>
@@ -143,3 +142,5 @@ const WorkoutItemRow: FunctionComponent<WorkoutItemProps> = (props) => {
 };
 
 export default WorkoutItemRow;
+
+export { displayNumArray }

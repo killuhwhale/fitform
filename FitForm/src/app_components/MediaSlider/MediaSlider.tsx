@@ -135,6 +135,7 @@ const MediaSlider: FunctionComponent<MediaSliderProps> = (props) => {
                     alignItems: "center",
 
                 }}
+
                 decelerationRate={"fast"}
                 snapToAlignment="center"
                 snapToInterval={SCREEN_WIDTH + (2 * screen_margin)}

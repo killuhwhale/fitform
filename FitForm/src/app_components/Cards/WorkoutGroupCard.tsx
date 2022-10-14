@@ -8,7 +8,7 @@ import { WorkoutGroupCardProps } from "./types";
 import grayGradient from "./../../../assets/bgs/graygrad.png"
 import greenGrad from "./../../../assets/bgs/greenGrad.png"
 import bluish from "./../../../assets/bgs/bluish.png"
-import mockLogo from "./../../../assets/bgs/mock_logo.png"
+import Icon from 'react-native-vector-icons/Ionicons';
 import { View } from "react-native";
 import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
 
@@ -80,7 +80,10 @@ const WorkoutGroupCard: FunctionComponent<WorkoutGroupCardProps> = (props) => {
     console.log("WGCard: ", props)
 
     return (
-        <CardBG source={bluish}>
+        <CardBG source={bluish} style={{
+            borderWidth: 3,
+            borderColor: props.completed ? "#00fff29c" : 'white',
+        }}>
             <CardTouchable underlayColor={theme.palette.transparent} activeOpacity={0.9} onPress={handlePress} >
                 <TouchableView>
                     <View style={{ width: "100%", height: '65%', justifyContent: 'flex-end', alignItems: 'flex-end', paddingRight: 16 }}>
@@ -96,7 +99,12 @@ const WorkoutGroupCard: FunctionComponent<WorkoutGroupCardProps> = (props) => {
                         <CardFooterBG source={bluish}>
                             <CardRow style={{ height: '100%' }}>
 
-                                <RegularText textStyles={{ paddingLeft: 16 }}>{props.title}</RegularText>
+                                <RegularText textStyles={{ paddingLeft: 16 }}>{props.title} </RegularText>
+                                <Icon
+                                    name='checkmark-circle-outline'
+                                    color={props.completed ? theme.palette.primary.main : theme.palette.text}
+                                    style={{ fontSize: 32, marginRight: 8 }}
+                                />
 
 
                             </CardRow>

@@ -35,18 +35,19 @@ class s3Client:
         # If S3 object_name was not specified, use file_name
 
         try:
+
             response = self.s3_client.put_object(
                 Bucket=self.BUCKET,
                 Key=f'{file_kind}/{parent_id}/{filename}',
                 Body=file,
-                ACL='public',
+                ACL='public-read',
                 Metadata={
                     'mykey': "myvalue"
                 }
             )
             print(response)
         except ClientError as e:
-            print(e)
+            print("Client error: ", e)
             return False
         return True
 

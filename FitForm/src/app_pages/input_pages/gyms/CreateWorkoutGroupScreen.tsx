@@ -1,7 +1,7 @@
 import React, { FunctionComponent, useState, useContext, useCallback, useRef } from "react";
 import styled from "styled-components/native";
 import { Image, Modal, Platform, StyleSheet, View, Switch } from "react-native";
-import { Container } from "../../../app_components/shared";
+import { Container, SCREEN_HEIGHT } from "../../../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText } from '../../../app_components/Text/Text'
 import { AppBar, Button, IconButton, TextInput } from "@react-native-material/core";
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -17,6 +17,8 @@ import { MediaSlider } from "../../../app_components/MediaSlider/MediaSlider";
 
 import { RootStackParamList } from "../../../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
+import DatePicker from "react-native-date-picker";
+import { dateFormat } from "../../StatsScreen";
 export type Props = StackScreenProps<RootStackParamList, "CreateWorkoutGroupScreen">
 
 const PageContainer = styled(Container)`
@@ -29,9 +31,9 @@ const Touchable = styled.TouchableHighlight`
     border-radius: 25px;
 `;
 
-const MyImagePicker: FunctionComponent<{ setState(file: ImageOrVideo[]): void; title: string; }> = (props) => {
+const MediaPicker: FunctionComponent<{ setState(file: ImageOrVideo[]): void; title: string; }> = (props) => {
 
-
+    const theme = useTheme();
 
 
 
@@ -57,7 +59,7 @@ const MyImagePicker: FunctionComponent<{ setState(file: ImageOrVideo[]): void; t
 
     return (
         <View>
-            <Button title={props.title} onPress={pickFile} />
+            <Button title={props.title} onPress={pickFile} style={{ backgroundColor: theme.palette.lightGray }} />
         </View>
     );
 };
@@ -72,6 +74,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
     const dispatch = useAppDispatch();
     const [files, setFiles] = useState<ImageOrVideo[]>();
     const [title, setTitle] = useState("");
+    const [forDate, setForDate] = useState<Date>(new Date());
 
     // Need to set ownedByClass somehow......
     // 1. User has classes, use a picker || Deciding to not use a picker. We will just go to the class and add from there...
@@ -98,8 +101,10 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
         const data = new FormData();
         data.append('owner_id', ownerID);
         data.append('owned_by_class', ownedByClass);
+
         data.append('title', title);
         data.append('caption', caption);
+        data.append('for_date', dateFormat(forDate));
         data.append('media_ids', []);
         if (files) {
             files.forEach((file) => data.append('files', { uri: file.path, name: file.filename, type: file.mime, }))
@@ -127,10 +132,10 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
 
     return (
         <PageContainer>
-            <RegularText>Create Workout Group</RegularText>
+            <RegularText textStyles={{ marginBottom: 8 }}>Create Workout Group</RegularText>
             <View style={{ height: '100%', width: '100%' }}>
 
-                <View style={{ flex: 3 }}>
+                <View style={{ flex: 4 }}>
                     <TextInput
                         value={title || ""}
                         onChangeText={(t) => setTitle(t)}
@@ -144,10 +149,26 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
                         onChangeText={(d) => setCaption(d)}
                         leading={props => <Icon name="checkmark-circle-outline" {...props} />}
                     />
-
+                    <View style={{
+                        flexDirection: 'row',
+                        width: '100%',
+                        backgroundColor: theme.palette.darkGray,
+                        justifyContent: 'center', alignItems: 'center',
+                    }}>
+                        <SmallText textStyles={{ textAlign: 'center', paddingLeft: 16 }}>For: </SmallText>
+                        <DatePicker
+                            date={forDate}
+                            onDateChange={setForDate}
+                            mode='date'
+                            locale="en"
+                            fadeToColor={theme.palette.darkGray}
+                            textColor={theme.palette.text}
+                            style={{ height: SCREEN_HEIGHT * 0.06, transform: [{ scale: 0.65, }] }}
+                        />
+                    </View>
                 </View>
                 <View style={{ flex: 9 }}>
-                    <MyImagePicker
+                    <MediaPicker
                         setState={setFiles.bind(this)}
                         title="Select Main Image"
 
@@ -163,7 +184,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
 
                 </View>
                 <View style={{ flex: 2 }}>
-                    <Button onPress={_createWorkout.bind(this)} title="Create" />
+                    <Button onPress={_createWorkout.bind(this)} title="Create" style={{ backgroundColor: theme.palette.lightGray }} />
                 </View>
             </View>
         </PageContainer>
@@ -171,3 +192,5 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
 }
 
 export default CreateWorkoutGroupScreen;
+
+export { MediaPicker }

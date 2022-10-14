@@ -70,7 +70,7 @@ const GymCard: FunctionComponent<GymCardProps> = (props) => {
     const handlePress = () => { navigation.navigate("GymScreen", { ...props }) };
     const mainURL = withSpaceURL('main', parseInt(props.id), MEDIA_CLASSES[0])
     const logoURL = withSpaceURL('logo', parseInt(props.id), MEDIA_CLASSES[0])
-    console.log("Gym card img urls ", props, mainURL, logoURL)
+    // console.log("Gym card img urls ", props, mainURL, logoURL)
     return (
         <GymCardBG source={{ uri: mainURL }}>
             <CardTouchable underlayColor={theme.palette.transparent} activeOpacity={0.9} onPress={handlePress} >
