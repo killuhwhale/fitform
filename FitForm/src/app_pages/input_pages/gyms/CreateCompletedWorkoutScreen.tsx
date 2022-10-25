@@ -22,12 +22,12 @@ import { MediaPicker } from "./CreateWorkoutGroupScreen";
 import { ImageOrVideo } from "react-native-image-crop-picker";
 import { MediaSlider } from "../../../app_components/MediaSlider/MediaSlider";
 import { WorkoutCardProps, WorkoutGroupProps, WorkoutItemProps } from "../../../app_components/Cards/types";
-import { displayJList, ItemString, jList, nanOrNah, NumberInput, numberInputStyle, numFilter, numFilterWithSpaces, verifyWorkoutItem } from "./CreateWorkoutScreen";
+import { displayJList, ItemString, jList, nanOrNah, numberInputStyle, numFilter, numFilterWithSpaces, verifyWorkoutItem } from "./CreateWorkoutScreen";
 import DatePicker from "react-native-date-picker";
 import { ActionCancelModal } from "../../Profile";
 import { dateFormat } from "../../StatsScreen";
 export type Props = StackScreenProps<RootStackParamList, "CreateCompletedWorkoutScreen">
-
+import Input from "../../../app_components/Input/input";
 const PageContainer = styled(Container)`
     background-color: ${props => props.theme.palette.backgroundColor};
     justify-content: space-between;
@@ -50,7 +50,7 @@ const EditWorkoutItem: FunctionComponent<{
     itemIdx: number;
     workoutIdx: number;
 }> = (props) => {
-
+    const theme = useTheme()
     const { workoutItem, schemeType } = props
     const { sets, reps, duration, distance, weights } = workoutItem
 
@@ -66,6 +66,14 @@ const EditWorkoutItem: FunctionComponent<{
     const [durationError, setDurationError] = useState("")
     const [distanceError, setDistanceError] = useState("")
 
+
+    // Prevents text field from disappearing when user removes all text from item
+    const [hasReps, _hasReps] = useState(JSON.parse(reps)[0] != 0)
+    const [hasWeights, _hasWeights] = useState(JSON.parse(weights).length != 0)
+    const [hasDuration, _hasDuration] = useState(JSON.parse(duration)[0] != 0)
+    const [hasDistance, _hasDistance] = useState(JSON.parse(distance)[0] != 0)
+
+
     return (
         <View style={{ width: '100%' }}>
             <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between' }}>
@@ -80,9 +88,10 @@ const EditWorkoutItem: FunctionComponent<{
 
 
             {
-                JSON.parse(reps)[0] != 0 && props.schemeType !== 0 ?
-                    <NumberInput
-                        containerStyle={numberInputStyle.containerStyle}
+                hasReps && props.schemeType !== 0 ?
+                    <Input
+                        inputStyles={{ textAlign: 'center' }}
+                        containerStyle={[numberInputStyle.containerStyle, { borderRadius: 4, backgroundColor: theme.palette.lightGray }]}
                         label="Reps"
                         value={newReps}
                         isError={repsError.length > 0}
@@ -119,9 +128,10 @@ const EditWorkoutItem: FunctionComponent<{
 
             }
             {
-                JSON.parse(duration)[0] != 0 && props.schemeType !== 0 ?
-                    <NumberInput
-                        containerStyle={numberInputStyle.containerStyle}
+                hasDuration && props.schemeType !== 0 ?
+                    <Input
+                        inputStyles={{ textAlign: 'center' }}
+                        containerStyle={[numberInputStyle.containerStyle, { borderRadius: 4, backgroundColor: theme.palette.lightGray }]}
                         onChangeText={(t) => {
                             let val = ""
 
@@ -157,9 +167,10 @@ const EditWorkoutItem: FunctionComponent<{
 
             }
             {
-                JSON.parse(distance)[0] != 0 && props.schemeType !== 0 ?
-                    <NumberInput
-                        containerStyle={numberInputStyle.containerStyle}
+                hasDistance && props.schemeType !== 0 ?
+                    <Input
+                        inputStyles={{ textAlign: 'center' }}
+                        containerStyle={[numberInputStyle.containerStyle, { borderRadius: 4, backgroundColor: theme.palette.lightGray }]}
                         label="Distance"
                         value={newDistance}
                         isError={distanceError.length > 0}
@@ -196,9 +207,10 @@ const EditWorkoutItem: FunctionComponent<{
 
             }
             {
-                JSON.parse(weights).length != 0 ?
-                    <NumberInput
-                        containerStyle={[numberInputStyle.containerStyle, { width: '100%' }]}
+                hasWeights ?
+                    <Input
+                        inputStyles={{ textAlign: 'center' }}
+                        containerStyle={[[numberInputStyle.containerStyle, { borderRadius: 4, backgroundColor: theme.palette.lightGray }], { width: '100%' }]}
                         onChangeText={(t) => {
                             let val = "";
                             if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||

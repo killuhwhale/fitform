@@ -15,7 +15,6 @@ const ButtonView = styled.TouchableOpacity`
     align-items: center;
     background-color: ${props => props.theme.palette.primary.main};
     width: 100%;
-    padding: 20px;
     border-radius: 20px;
 `;
 
@@ -24,11 +23,12 @@ interface ButtonProps {
     onPress: ((event: GestureResponderEvent) => void) | undefined;
     textStyles?: StyleProp<TextStyle>;
     children: React.ReactNode;
+    disabled?: boolean;
 }
 
 const RegularButton: FunctionComponent<ButtonProps> = (props) => {
     return <>
-        <ButtonView onPress={props.onPress} style={props.btnStyles}>
+        <ButtonView onPress={props.disabled ? () => { } : props.onPress} style={props.btnStyles}>
             <RegularText textStyles={props.textStyles} >{props.children}</RegularText>
         </ButtonView>
     </>;

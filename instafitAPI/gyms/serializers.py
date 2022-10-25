@@ -14,13 +14,16 @@ class Gym_ClassSerializer(serializers.ModelSerializer):
 
 
 class GymSerializer(serializers.ModelSerializer):
-    # Adding this made me unable to create a gym without add gym_classes
-    gym_classes = Gym_ClassSerializer(
-        source="gymclasses_set", many=True, required=False)
+    gym_classes = serializers.SerializerMethodField()
 
     class Meta:
         model = Gyms
         fields = '__all__'
+
+    def get_gym_classes(self, instance):
+        print('Gym View instance: ', instance)
+        classes = instance.gymclasses_set.order_by('date')
+        return Gym_ClassSerializer(classes, many=True, required=False).data
 
 
 class GymSerializerWithoutClasses(serializers.ModelSerializer):
@@ -160,6 +163,16 @@ class WorkoutGroupsSerializer(serializers.ModelSerializer):
     workouts = WorkoutSerializer(
         source="workouts_set", many=True, required=False)
 
+    completed = serializers.SerializerMethodField('has_completed')
+
+    def has_completed(self, workout_group):
+        print("Has completed: ", workout_group.id,  self.context)
+
+        return CompletedWorkoutGroups.objects.filter(
+            workout_group_id=workout_group.id,
+            user_id=self.context["request"].user.id
+        ).exists()
+
     class Meta:
         model = WorkoutGroups
         fields = '__all__'
@@ -212,10 +225,26 @@ class CombinedWorkoutGroupsSerializer(serializers.Serializer):
 class CombinedWorkoutGroupsSerializerNoWorkouts(serializers.Serializer):
     # created_workout_groups = WorkoutGroupsNoWorkoutsSerializer(
     #     many=True, required=False)
-    created_workout_groups = WorkoutGroupsAutoCompletedSerializer(
-        many=True, required=False)
-    completed_workout_groups = CompletedWorkoutGroupsNoWorkoutsSerializer(
-        many=True, required=False)
+    created_workout_groups = serializers.SerializerMethodField()
+    completed_workout_groups = serializers.SerializerMethodField()
+    # created_workout_groups = WorkoutGroupsAutoCompletedSerializer(
+    #     many=True, required=False)
+    # completed_workout_groups = CompletedWorkoutGroupsNoWorkoutsSerializer(
+    #     many=True, required=False)
+
+    def get_created_workout_groups(self, instance):
+        print("Instance: ", instance)
+        print("Context: ", self.context)
+        cwgs = instance['created_workout_groups'].order_by('for_date')
+        print("This should be sorted by for_date", cwgs)
+
+        return WorkoutGroupsAutoCompletedSerializer(cwgs, context=self.context,
+                                                    many=True, required=False).data
+
+    def get_completed_workout_groups(self, instance):
+        wgs = instance['completed_workout_groups'].order_by('for_date')
+        return CompletedWorkoutGroupsNoWorkoutsSerializer(wgs, context=self.context,
+                                                          many=True, required=False).data
 
 
 ########################################################
@@ -315,11 +344,19 @@ class UserWithoutEmailSerializer(serializers.Serializer):
     id = serializers.IntegerField()
 
 
-class ProfileSerializer(serializers.Serializer):
-
-    user = UserSerializer()
+class ProfileWorkoutGroupsSerializer(serializers.Serializer):
     workout_groups = CombinedWorkoutGroupsSerializerNoWorkouts(required=False)
+
+
+class ProfileGymFavoritesSerializer(serializers.Serializer):
     favorite_gyms = GymFavoritesSerializer(many=True, required=False)
+
+
+class ProfileGymClassFavoritesSerializer(serializers.Serializer):
     favorite_gym_classes = GymClassFavoritesSerializer(
         many=True, required=False)
+
+
+class ProfileSerializer(serializers.Serializer):
+    user = UserSerializer()
     measurements = BodyMeasurementsSerializer(many=True, required=False)

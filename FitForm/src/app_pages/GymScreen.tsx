@@ -9,7 +9,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
 import { View } from "react-native";
-import { useFavoriteGymMutation, useGetGymDataViewQuery, useGetProfileViewQuery, useUnfavoriteGymMutation } from "../redux/api/apiSlice";
+import { useFavoriteGymMutation, useGetGymDataViewQuery, useGetProfileGymClassFavsQuery, useGetProfileGymFavsQuery, useGetProfileViewQuery, useUnfavoriteGymMutation } from "../redux/api/apiSlice";
 import { ScrollView } from "react-native-gesture-handler";
 import { IconButton } from "@react-native-material/core";
 import { GymCardProps } from "../app_components/Cards/types";
@@ -52,13 +52,21 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
     const logoURL = withSpaceURL('logo', parseInt(id), MEDIA_CLASSES[0])
     // Fetch GymClasses without workouts to Display here.... by gym ID: id.
     const { data, isLoading, isSuccess, isError, error } = useGetGymDataViewQuery(id);
+    console.log("GymData view:", data)
 
-    const { data: userData, isLoading: userDataIsLoading, isSuccess: userDataIsSuccess, isError: userDataIsError, error: userDataError } = useGetProfileViewQuery("");
-    const [favoriteGymMutation, { isLoading: favGymLoading }] = useFavoriteGymMutation();
+    const {
+        data: dataGymFavs,
+        isLoading: isLoadingGymFavs,
+        isSuccess: isSuccessGymFavs,
+        isError: isErrorGymFavs,
+        error: errorGymFavs
+    } = useGetProfileGymFavsQuery("");
+
+    const [favoriteGymMutation, { isLoading: favGymLoading, }] = useFavoriteGymMutation();
     const [unfavoriteGymMutation, { isLoading: unfavGymLoading }] = useUnfavoriteGymMutation();
     const isFavorited = (gyms: { id: number; user_id: string; date: string; gym: GymCardProps }[]) => {
         let faved = false;
-        gyms.forEach(favgym => {
+        gyms?.forEach(favgym => {
             if (favgym.gym.id == id) {
                 faved = true;
             }
@@ -88,8 +96,7 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
         setTerm(term)
     }
 
-    console.log("String data", stringData)
-    console.log("Filtered results", filterResult)
+
     return (
         <GymScreenContainer>
             <View style={{ flex: 1 }}>
@@ -103,8 +110,8 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
                     </View>
                     <View style={{ flex: 1 }}>
                         {
-                            userData &&
-                                isFavorited(userData.favorite_gyms) ?
+                            dataGymFavs && !isLoadingGymFavs &&
+                                isFavorited(dataGymFavs.favorite_gyms) ?
                                 <IconButton style={{ height: 24 }} icon={<Icon name='star' color="red" style={{ fontSize: 24 }} />} onPress={() => unfavoriteGymMutation(favObj)} />
                                 :
                                 <IconButton style={{ height: 24 }} icon={<Icon name='star' color="white" style={{ fontSize: 24 }} />} onPress={() => favoriteGymMutation(favObj)} />

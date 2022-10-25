@@ -66,7 +66,7 @@ const MediaPicker: FunctionComponent<{ setState(file: ImageOrVideo[]): void; tit
 
 
 
-const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route: { params: { ownedByClass, ownerID } } }) => {
+const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route: { params: { ownedByClass, ownerID, gymClassProps } } }) => {
     const theme = useTheme();
     console.log("WGroup params: ", ownedByClass, ownerID)
 
@@ -119,7 +119,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
             const workoutGroup = await createWorkoutGroup(data).unwrap();
             console.log("Gym class res", workoutGroup)
             if (workoutGroup.id) {
-                navigation.goBack()
+                // navigation.navigate("GymClassScreen", { ...gymClassProps })
             }
 
         } catch (err) {

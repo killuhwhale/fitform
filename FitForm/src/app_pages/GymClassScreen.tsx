@@ -9,7 +9,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
-import { useCreateCoachMutation, useCreateMemberMutation, useDeleteCoachMutation, useDeleteGymClassMutation, useDeleteMemberMutation, useFavoriteGymClassMutation, useGetCoachesForGymClassQuery, useGetGymClassDataViewQuery, useGetMembersForGymClassQuery, useGetProfileViewQuery, useGetUsersQuery, useUnfavoriteGymClassMutation } from "../redux/api/apiSlice";
+import { useCreateCoachMutation, useCreateMemberMutation, useDeleteCoachMutation, useDeleteGymClassMutation, useDeleteMemberMutation, useFavoriteGymClassMutation, useGetCoachesForGymClassQuery, useGetGymClassDataViewQuery, useGetMembersForGymClassQuery, useGetProfileGymClassFavsQuery, useGetProfileViewQuery, useGetUsersQuery, useUnfavoriteGymClassMutation } from "../redux/api/apiSlice";
 import { Button, IconButton } from "@react-native-material/core";
 import { GymClassCardProps } from "../app_components/Cards/types";
 import { ActionCancelModal } from "./Profile";
@@ -335,11 +335,9 @@ const ManageCoachesModal: FunctionComponent<{
 const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) => {
     const theme = useTheme();
     const { id, logoImage, mainImage, title, desc, gym, date, private: is_private } = params || {};
-
     const [deleteGymClassModalVisible, setDeleteGymClassModalVisibleVisible] = useState(false);
     const [showCoachModal, setShowCoachModal] = useState(false);
     const [showMembersModal, setShowMembersModal] = useState(false);
-
     const { data: allMembers, isLoading: membersLoading,
         isSuccess: membersIsSuccess, isError: membersIsError, error: membersError
     } = useGetMembersForGymClassQuery(id);
@@ -347,12 +345,28 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
         isSuccess: coachesIsSuccess, isError: coachesIsError, error: coachesError
     } = useGetCoachesForGymClassQuery(id);
 
-    const { data, isLoading, isSuccess, isError, error } = useGetGymClassDataViewQuery(id);
+    const {
+        data,
+        isLoading,
+        isSuccess,
+        isError,
+        error
+    } = useGetGymClassDataViewQuery(id);
+
     const [deleteGymClassMutation, { isLoading: isDeleteGymClassLoading }] = useDeleteGymClassMutation()
     const mainURL = withSpaceURL('main', parseInt(id), MEDIA_CLASSES[1])
     const logoURL = withSpaceURL('logo', parseInt(id), MEDIA_CLASSES[1])
 
-    const { data: userData, isLoading: userDataIsLoading, isSuccess: userDataIsSuccess, isError: userDataIsError, error: userDataError } = useGetProfileViewQuery("");
+    // Separate workout groups into separate query for better caching.
+
+    const {
+        data: dataGymClassFavs,
+        isLoading: isLoadingGymClassFavs,
+        isSuccess: isSuccessGymClassFavs,
+        isError: isErrorGymClassFavs,
+        error: errorGymClassFavs
+    } = useGetProfileGymClassFavsQuery("");
+
     const [favoriteGymClassMutation, { isLoading: favGymLoading }] = useFavoriteGymClassMutation();
     const [unfavoriteGymClassMutation, { isLoading: unfavGymLoading }] = useUnfavoriteGymClassMutation();
     const isFavorited = (classes: { id: number; user_id: string; date: string; gym_class: GymClassCardProps }[]) => {
@@ -364,31 +378,25 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
         })
         return faved;
     }
-
+    const favObj = new FormData();
+    favObj.append('gym_class', id)
     console.log("GClass params: ", params)
     console.log("GClass data: ", data)
 
-    const favObj = new FormData();
-    favObj.append('gym_class', id)
 
     const onConfirmDelete = () => {
         setDeleteGymClassModalVisibleVisible(true)
     }
-
     const onDelete = async () => {
         const deletedGym = await deleteGymClassMutation(id).unwrap();
         console.log("Deleted Gym: ", deletedGym)
         setDeleteGymClassModalVisibleVisible(false)
     }
 
-
-
-
-
-
+    // TODO replace with separate use...
     const workoutGroups = data?.workout_groups || []
 
-
+    // Search feature
     const [stringData, setOgData] = useState<string[]>(workoutGroups ? workoutGroups.map(group => group.title) : [])
     const [filterResult, setFilterResult] = useState<number[]>(Array.from(Array(stringData.length).keys()).map((idx) => idx))
     useEffect(() => {
@@ -396,7 +404,6 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
         setFilterResult(Array.from(Array(workoutGroups?.length || 0).keys()).map((idx) => idx))
     }, [data])
 
-    // Access/ send actions
     const [term, setTerm] = useState("");
     const filterText = (term: string) => {
         // Updates filtered data.
@@ -422,8 +429,8 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
                 </View>
                 <View style={{ position: 'absolute', right: 5 }}>
                     {
-                        userData &&
-                            isFavorited(userData.favorite_gym_classes) ?
+                        dataGymClassFavs && !isLoadingGymClassFavs &&
+                            isFavorited(dataGymClassFavs?.favorite_gym_classes) ?
                             <View style={{ alignItems: 'center' }}>
                                 <IconButton style={{ height: 24 }} icon={<Icon name='star' color="red" style={{ fontSize: 24 }} />} onPress={() => unfavoriteGymClassMutation(favObj)} />
                                 <SmallText>Unfavorite</SmallText>
@@ -505,7 +512,7 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
                                 title="Create workout group"
                                 style={{ backgroundColor: theme.palette.lightGray }}
                                 onPress={() => {
-                                    navigation.navigate("CreateWorkoutGroupScreen", { ownedByClass: true, ownerID: id });
+                                    navigation.navigate("CreateWorkoutGroupScreen", { ownedByClass: true, ownerID: id, gymClassProps: params });
                                 }}
                             />
                             {

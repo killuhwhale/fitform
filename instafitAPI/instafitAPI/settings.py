@@ -67,8 +67,6 @@ SIMPLE_JWT = {
 # Application definition
 
 INSTALLED_APPS = [
-    'users',
-    'gyms',
     'rest_framework',
     'rest_framework.authtoken',
 
@@ -79,7 +77,11 @@ INSTALLED_APPS = [
     # 'django.contrib.messages',
     'django.contrib.staticfiles',
     'storages',
+    'users.apps.UsersConfig',
+    'gyms',
 ]
+
+AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -96,7 +98,9 @@ MIDDLEWARE = [
     # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+AUTHENTICATION_BACKENDS = {
+    'users.authBackend.EmailAuth'
+}
 ROOT_URLCONF = 'instafitAPI.urls'
 
 TEMPLATES = [

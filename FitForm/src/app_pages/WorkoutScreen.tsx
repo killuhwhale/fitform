@@ -114,9 +114,16 @@ const DisplayWorkout: FunctionComponent<WorkoutCardProps> = (props) => {
 
 const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) => {
     const theme = useTheme();
-    const { id, title, caption, owned_by_class, owner_id, media_ids, user_id, completed, workout_group } = params.data || {}; // Workout group
-    const { data: userData, isLoading: userIsloading, isSuccess: userIsSuccess, isError: userIsError, error: userError } = useGetUserInfoQuery("");
-    let queryResult;
+    const {
+        id, title, caption, owned_by_class, owner_id,
+        media_ids, user_id, completed, workout_group
+    } = params.data || {}; // Workout group
+
+    const {
+        data: userData, isLoading: userIsloading,
+        isSuccess: userIsSuccess, isError: userIsError,
+        error: userError
+    } = useGetUserInfoQuery("");
 
     let mediaClass = -1;
     let isShowingOGWorkoutGroup = true;
@@ -161,21 +168,32 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
     } else if (owned_by_class) {
         // we have OG workout owneed by class
         const { data, isLoading, isSuccess, isError, error } = useGetWorkoutsForGymClassWorkoutGroupQuery(id);
+        console.log("Owned by class, data: ", data)
         oGData = data
         oGIsLoading = isLoading
         oGIsSuccess = isSuccess
         oGIsError = isError
         oGError = error
-        if (completed) {
-            // Fetch completed group version by ID, we dont know which ID is the completed ID but we can query with user id and OG Workout Group ID
-            const { data, isLoading, isSuccess, isError, error } = useGetCompletedWorkoutByWorkoutIDQuery(id);
-            completedData = data
-            completedIsLoading = isLoading
-            completedIsSuccess = isSuccess
-            completedIsError = isError
-            completedError = error
 
+        // This 'completed' should come from ogData query. 
+        const {
+            data: dataCompleted,
+            isLoading: isLoadingCompleted,
+            isSuccess: isSuccessCompleted,
+            isError: isErrorCompleted,
+            error: errorCompleted,
+        } = useGetCompletedWorkoutByWorkoutIDQuery(id);
+
+        console.log("Completed data: ", dataCompleted)
+
+        if (dataCompleted && dataCompleted.completed_workouts.length > 0) {
+            completedData = dataCompleted
+            completedIsLoading = isLoadingCompleted
+            completedIsSuccess = isSuccessCompleted
+            completedIsError = isErrorCompleted
+            completedError = errorCompleted
         }
+
 
     } else {
         // we have OG workout owneed by user
@@ -271,7 +289,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
         const data = new FormData()
         data.append('group', oGData.id)
         try {
-            const res = await finishWorkoutGroup(data)
+            const res = await finishWorkoutGroup(data).unwrap()
             console.log("res finsih", res)
             setFinishWorkoutGroupModalVisible(false)
         } catch (err) {

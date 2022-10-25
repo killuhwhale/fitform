@@ -13,7 +13,7 @@ interface OnLoginProps {
 };
 
 
-export class AuthManager {
+class AuthManager {
     onLogout: OnLogoutProps[];
     onLogin: OnLoginProps[];
 
@@ -32,12 +32,11 @@ export class AuthManager {
 
     async login(email, password) {
         // Perform login, update tokens access and fresh tokens
-        const res = await post(`${BASEURL}token/`, { username: email, password });
+        const res = await post(`${BASEURL}token/`, { email: email, password });
+        const result = await res.json()
         console.log("Login res: ", res)
-        if (res.refresh && res.access) {
-
-
-            if (await storeToken(res.access) && await storeToken(res.refresh, false)) {
+        if (result.refresh && result.access) {
+            if (await storeToken(result.access) && await storeToken(result.refresh, false)) {
                 this.onLogin.forEach(fn => fn());
             }
         }

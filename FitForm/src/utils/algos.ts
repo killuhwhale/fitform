@@ -78,3 +78,17 @@ export const filter = (query: string, items: string[], options) => {
     // ready
     return matches;
 }
+
+
+// https://www.freecodecamp.org/news/javascript-debounce-example/
+export const debounce = (func, timeout = 300) => {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { console.log("Settimeout apply funcz"); func.apply(this, args); }, timeout);
+    };
+}
+
+
+
+export const validEmailRegex = new RegExp("([!#-'*+/-9=?A-Z^-~-]+(\.[!#-'*+/-9=?A-Z^-~-]+)*|\"\(\[\]!#-[^-~ \t]|(\\[\t -~]))+\")@([!#-'*+/-9=?A-Z^-~-]+(\.[!#-'*+/-9=?A-Z^-~-]+)*|\[[\t -Z^-~]*])");

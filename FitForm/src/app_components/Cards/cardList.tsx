@@ -80,7 +80,13 @@ const WorkoutGroupCardList: FunctionComponent<WorkoutGroupCardListProps> = (prop
                 justifyContent: "space-between",
             }}
             ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
-            keyExtractor={({ id }: any) => id.toString()}
+            keyExtractor={(item: any) => {
+                // In profile, we have combined WorkoutGroups
+                // WorkoutGroups & CompletedWorkoutGroups, thus we will have conflicting key when using id
+                // Only WorkoutGroups contain the key, owned_by_class.
+                return item.owned_by_class !== undefined ? `wg-${item.id.toString()}` : `cwg-${item.id.toString()}`
+            }
+            }
             renderItem={({ item }: any) => {
                 console.log("WGC item: ", props)
                 return <WorkoutGroupCard  {...item} editable={props.editable} />

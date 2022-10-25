@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useState } from "react";
+import React, { FunctionComponent, useCallback, useEffect, useState } from "react";
 import styled from "styled-components/native";
 import { Container } from "../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText, MediumText } from '../app_components/Text/Text'
@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import { useTheme } from 'styled-components'
 import { useAppSelector, useAppDispatch } from '../redux/hooks'
-import { useDeleteGymMutation, useGetProfileViewQuery, useGetUserGymsQuery } from "../redux/api/apiSlice";
+import { useDeleteGymMutation, useGetProfileGymClassFavsQuery, useGetProfileGymFavsQuery, useGetProfileViewQuery, useGetProfileWorkoutGroupsQuery, useGetUserGymsQuery, useUpdateUsernameMutation } from "../redux/api/apiSlice";
 
 import { WorkoutGroupCardList } from "../app_components/Cards/cardList"
 
@@ -19,6 +19,9 @@ import { Modal, StyleSheet, TouchableHighlight, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import AuthManager from "../utils/auth";
 import { GymCardProps, GymClassCardProps, WorkoutCardProps, WorkoutGroupCardProps } from "../app_components/Cards/types";
+import Input from "../app_components/Input/input";
+import { debounce } from "../utils/algos";
+import { ResetPassword } from "../app_components/email/email";
 
 export type Props = StackScreenProps<RootStackParamList, "Profile">
 
@@ -116,14 +119,74 @@ interface WorkoutPanelProps {
 //     }[]
 // }
 
+// Alllow user to change username here.
+// Long press into a textField with a save and cacel button.
+
 const UserInfoPanel: FunctionComponent<UserInfoPanelProps> = (props) => {
     const theme = useTheme();
     const { id, email, username } = props.user || { id: 0, email: '', username: "" };
+    const [showEditusername, setShowEditUsername] = useState(false)
+    const [newUsername, setNewUsername] = useState(username)
+    const [_updateUsername, { isLoading }] = useUpdateUsernameMutation();
+    const [savedUsername, setSavedUsername] = useState(false);
+
+    const manageUpdateUsername = async (text) => {
+        const data = new FormData()
+        data.append("username", text)
+        if (!isLoading) {
+            const res = await _updateUsername(data).unwrap()
+            if (res.username) {
+                setSavedUsername(true)
+            }
+        }
+    }
+
+
+    const updateUsername = useCallback(debounce(manageUpdateUsername, 5500), [])
+
+
+
+
+
+
+
+
+
+    useEffect(() => {
+        return function cleanup() {
+            if (!savedUsername && username !== newUsername) {
+                manageUpdateUsername(newUsername)  // Attempt to save username
+            }
+        }
+    }, [props])
+
+
+
+
     return (
         <View style={{ width: '100%' }}>
             <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                <IconButton onPress={() => { }} color={theme.palette.text} icon={props => <Icon name="person" {...props} />} />
-                <RegularText>{username}</RegularText>
+                <IconButton onPress={() => { setShowEditUsername(!showEditusername) }} color={theme.palette.text} icon={props => <Icon name="person" {...props} />} />
+                {
+                    showEditusername ?
+                        <Input
+                            containerStyle={{
+                                backgroundColor: theme.palette.lightGray, height: 45,
+                                borderRadius: 8,
+                                marginHorizontal: 4,
+                            }}
+                            inputStyles={{ textAlign: 'center' }}
+                            label=""
+                            onChangeText={(t: string) => {
+                                setNewUsername(t)
+                                setSavedUsername(false)
+                                updateUsername(t)
+                            }}
+                            value={newUsername}
+                            placeholder='Username'
+                        />
+                        : <RegularText textStyles={{ textAlign: 'center' }}>{newUsername}</RegularText>
+                }
             </View>
         </View>
     );
@@ -369,6 +432,8 @@ const ProfileSettingsModal: FunctionComponent<{
                         </TouchableHighlight>
 
                     </View>
+
+
                     <View style={{ flexDirection: "row", alignItems: 'center', flex: 2 }}>
                         <Button onPress={props.onRequestClose} title='Close' style={{ backgroundColor: theme.palette.lightGray }} />
                     </View>
@@ -385,13 +450,44 @@ const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
     const count = useAppSelector((state) => state.counter.value)
     // Split this query up,  use separate query for Favorites so we can use it in other places
     // We want to query all favorites so we can check on GymScreen if we have favorited it, this query will be cached...
-    const { data, isLoading, isSuccess, isError, error } = useGetProfileViewQuery("");
+    const {
+        data,
+        isLoading,
+        isSuccess,
+        isError,
+        error
+    } = useGetProfileViewQuery("");
+
+    const {
+        data: dataWG,
+        isLoading: isLoadingWG,
+        isSuccess: isSuccessWG,
+        isError: isErrorWG,
+        error: errorWG,
+    } = useGetProfileWorkoutGroupsQuery("");
+    const {
+        data: dataGymFavs,
+        isLoading: isLoadingGymFavs,
+        isSuccess: isSuccessGymFavs,
+        isError: isErrorGymFavs,
+        error: errorGymFavs,
+    } = useGetProfileGymFavsQuery("");
+    const {
+        data: dataGymClassFavs,
+        isLoading: isLoadingGymClassFavs,
+        isSuccess: isSuccessGymClassFavs,
+        isError: isErrorGymClassFavs,
+        error: errorGymClassFavs,
+    } = useGetProfileGymClassFavsQuery("");
+
+
+
     const { data: usersGyms, isLoading: userGymsLoading, isSuccess: gymIsSuccess, isError: gymIsError, error: gymError } = useGetUserGymsQuery("");
     // const { data: workoutGroups, isLoading: workoutGroupsLoading,
     //     isSuccess: workoutGroupSuccess, isError: workoutGroupErr,
     //     error: workoutGroupError } = useGetUsersWorkoutGroupsQuery("");
 
-    console.log("Profile data: ", data, error)
+    console.log("Profile data: ", dataWG)
     // Access/ send actions
     const dispatch = useAppDispatch();
     const [modalVisible, setModalVisible] = useState(false);
@@ -399,6 +495,9 @@ const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
     const [curDelGym, setCurDelGym] = useState({} as GymCardProps);
 
     const [deleteGymMutation, { isLoading: deleteGymLoading }] = useDeleteGymMutation();
+    const [updateUsernameMutation, { isLoading: updateUsernameLoading }] = useUpdateUsernameMutation();
+
+
     const onConfirmDelete = (gym: GymCardProps) => {
         setCurDelGym(gym)
         setDeleteGymModalVisibleVisible(true)
@@ -433,22 +532,22 @@ const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
                             </View>
 
                             {
-                                data.favorite_gyms?.length ?
+                                dataGymClassFavs?.length > 0 ?
                                     <View style={{ flex: 3, width: "100%" }}>
                                         <SmallText>Favorite Gyms</SmallText>
                                         <ScrollView>
-                                            <FavGymsPanel data={data.favorite_gyms} />
+                                            <FavGymsPanel data={dataGymFavs} />
                                         </ScrollView>
                                     </View>
                                     : <></>
                             }
 
                             {
-                                data.favorite_gym_classes?.length ?
+                                dataGymClassFavs?.length > 0 ?
                                     <View style={{ flex: 3, width: "100%" }}>
                                         <SmallText> Favorite Gym Classess</SmallText>
                                         <ScrollView>
-                                            <FavGymClassesPanel data={data.favorite_gym_classes} />
+                                            <FavGymClassesPanel data={dataGymClassFavs} />
                                         </ScrollView>
                                     </View>
                                     : <></>
@@ -472,7 +571,11 @@ const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
 
                             <View style={{ flex: 10, width: "100%" }}>
                                 <RegularText>My Workouts</RegularText>
-                                <WorkoutsPanel data={[...data.workout_groups.created_workout_groups, ...data.workout_groups.completed_workout_groups]} />
+                                {
+                                    !isLoadingWG && dataWG ?
+                                        <WorkoutsPanel data={[...dataWG.workout_groups?.created_workout_groups, ...dataWG.workout_groups?.completed_workout_groups]} />
+                                        : <></>
+                                }
 
                             </View>
 

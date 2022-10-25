@@ -31,54 +31,31 @@ import { TouchableHighlight } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import * as RootNavigation from '../../../navigators/RootNavigation'
 import { parseNumList } from "../../WorkoutDetailScreen";
+import Input from "../../../app_components/Input/input";
 export type Props = StackScreenProps<RootStackParamList, "CreateWorkoutScreen">
 
+export const COLORSPALETTE = [
+    '#fa4659',
+    '#ed93cb',
+    '#a3de83',
+    '#2eb872',
+    '#f469a9',
+
+    '#fd2eb3',
+    '#add1fc',
+    '#9870fc',
+
+]
 const PageContainer = styled(Container)`
     background-color: ${props => props.theme.palette.backgroundColor};
     justify-content: space-between;
     width: 100%;
 `;
-
-
-
-// id: number;
-// name: WorkoutNameProps;
-// sets: number;
-// reps: number;
-// duration: number;
-// duration_unit: number;
-// weights: string;
-// weight_unit: string;
-// rest_duration: number;
-// rest_duration_unit: number;
-// percent_of: string;
-// date: string;
-// workout: number;
-
-// rounds: number;
-// intensity: number;
-export const nanOrNah = (str: string) => {
-    return isNaN(parseInt(str)) ? 0 : parseInt(str);
-}
-
-const numFilter = (str: string): string => {
-    const r = str.replace(/[^0-9]/g, '');
-    return r
-}
-const numFilterWithSpaces = (str: string): string => {
-    const r = str.replace(/[^0-9\s]/g, '');
-    const hasSpace = r[r.length - 1] === " "
-    return hasSpace ? r.trim() + " " : r.trim();
-}
-
 const numberInputStyle = StyleSheet.create({
     containerStyle: {
         width: '100%',
     }
 })
-
-const PICKER_WIDTH = SCREEN_WIDTH * 0.25;
-
 const pickerStyle = StyleSheet.create({
     containerStyle: {
     },
@@ -88,21 +65,28 @@ const pickerStyle = StyleSheet.create({
         fontSize: 12,
     }
 })
-
-
-interface InputProps {
-    onChangeText(text: string): void | undefined;
-    value: string | undefined;
-    containerStyle: StyleProp<ViewStyle>;
-    label: string;
-    placeholder?: string;
-    leading?: ReactNode;
-    inputStyles?: StyleProp<TextStyle>;
-    isError?: boolean;
-    helperText?: string;
-    editable?: boolean;
-    fontSize?: number;
-    centerInput?: boolean;
+export const nanOrNah = (str: string) => {
+    return isNaN(parseInt(str)) ? 0 : parseInt(str);
+}
+const numFilter = (str: string): string => {
+    const r = str.replace(/[^0-9]/g, '');
+    return r
+}
+const numFilterWithSpaces = (str: string): string => {
+    const r = str.replace(/[^0-9\s]/g, '');
+    const hasSpace = r[r.length - 1] === " "
+    return hasSpace ? r.trim() + " " : r.trim();
+}
+const displayJList = (weights: string) => {
+    return weights.toString().replace('[', '').replace(']', '')
+}
+// Converts list of num to stringified list
+const jList = (str: string): string => {
+    const S = str.trim()
+    if (!S) {
+        return JSON.stringify([])
+    }
+    return JSON.stringify(S.split(" ").map((strnum: string) => parseInt(strnum)))
 }
 
 interface AddWorkoutItemProps {
@@ -110,144 +94,6 @@ interface AddWorkoutItemProps {
     errorType: number;
     errorMsg: string;
 }
-
-
-const Input: FunctionComponent<InputProps> = (props) => {
-    const theme = useTheme();
-    const inpRef = useRef<TTextInput>(null);
-
-    const focus = () => {
-        console.log("Focus!")
-        if (inpRef.current) {
-            inpRef.current.focus()
-        }
-    }
-
-
-    return (
-        <View style={[props.containerStyle, { width: '100%', flex: 1 }]}>
-
-            <TouchableWithoutFeedback onPress={() => focus()}  >
-                <View style={{ width: '100%', }}>
-                    <View style={{ flexDirection: 'row', width: '100%', height: '100%' }}>
-
-                        <View style={{ width: props.leading ? '10%' : 0, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-                            {
-                                props.leading ?
-                                    props.leading
-                                    : <></>
-                            }
-
-                        </View>
-                        <View
-                            style={{
-                                width: props.leading ? '80%' : '100%',
-                                height: '100%',
-                                justifyContent: 'center',
-                                alignItems: props.centerInput ? 'center' : 'flex-start'
-                            }} >
-
-                            <NTextInput
-                                style={
-                                    [props.inputStyles,
-                                    {
-                                        color: theme.palette.text,
-                                        width: '100%',
-                                        fontSize: props.fontSize || 24,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        alignContent: 'center',
-
-                                    }
-                                    ]
-                                }
-
-                                ref={inpRef}
-                                onChangeText={props.onChangeText}
-                                value={props.value}
-                                placeholder={props.placeholder}
-                                placeholderTextColor={theme.palette.text}
-                                selectionColor={theme.palette.text}
-                                editable={props.editable == undefined ? true : props.editable}
-                            />
-
-                        </View>
-                        <View style={{ width: props.leading ? '10%' : 0 }}>
-
-                        </View>
-                    </View>
-                    {
-                        props.isError ?
-                            <View style={{ position: 'absolute', left: props.leading ? 40 : 5, bottom: 0 }} >
-                                <SmallText textStyles={{ color: 'red' }}>{props.helperText}</SmallText>
-                            </View>
-                            : <></>
-                    }
-
-                </View>
-
-            </TouchableWithoutFeedback>
-        </View>
-    )
-}
-
-// Deprecated
-const StrInput: FunctionComponent<InputProps> = (props) => {
-    const theme = useTheme();
-    return (
-        <View style={{ flexDirection: "row", backgroundColor: theme.palette.gray, height: '100%' }}>
-
-            <View style={{ width: '100%' }}>
-                <Input
-                    onChangeText={props.onChangeText}
-                    label={props.label}
-                    containerStyle={[props.containerStyle, {
-                        padding: 6,
-                        borderTopLeftRadius: 8,
-                        borderTopRightRadius: 8,
-                    }]}
-                    value={props.value}
-                    placeholder={props.placeholder}
-                    editable={props.editable}
-                    leading={props.leading}
-                    helperText={props.helperText}
-
-                />
-
-            </View>
-        </View>
-    )
-}
-
-// Deprecated
-const NumberInput: FunctionComponent<InputProps> = (props) => {
-    const theme = useTheme();
-    const errorStyles = props.isError ? {
-        borderBottomWidth: 2,
-        borderColor: 'red',
-    } : {}
-    return (
-        <View style={{ margin: 1, padding: 2, flex: 1, width: '100%' }}>
-            <Input
-                onChangeText={props.onChangeText}
-                label={props.label}
-                containerStyle={[props.containerStyle, { backgroundColor: theme.palette.tertiary.main, }, errorStyles]}
-                inputStyles={{ textAlign: 'center' }}
-                value={props.value}
-                editable={props.editable}
-            />
-            {
-                props.isError ?
-                    <View style={{ position: 'absolute', bottom: '15%', left: '5%' }} >
-                        <SmallText textStyles={{ color: 'red' }}>{props.helperText}</SmallText>
-                    </View>
-                    : <></>
-            }
-        </View>
-    )
-}
-
-
 
 
 const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkoutItemProps; schemeType: number; }> = (props) => {
@@ -809,6 +655,7 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkout
     );
 };
 
+
 const RepSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; editable?: boolean; }> = (props) => {
     const theme = useTheme();
 
@@ -866,6 +713,7 @@ const RoundSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schem
     );
 };
 
+
 const TimeSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); schemeRounds: string; }> = (props) => {
     const theme = useTheme();
     return (
@@ -887,27 +735,7 @@ const TimeSheme: FunctionComponent<{ onSchemeRoundChange(scheme: string); scheme
         </View>
     );
 };
-const StandardSheme: FunctionComponent = (props) => {
 
-    return (
-        <View>
-            <RegularText> Nothing need for a standard list of items....  </RegularText>
-        </View>
-    );
-};
-
-export const COLORSPALETTE = [
-    '#fa4659',
-    '#ed93cb',
-    '#a3de83',
-    '#2eb872',
-    '#f469a9',
-
-    '#fd2eb3',
-    '#add1fc',
-    '#9870fc',
-
-]
 
 const ColorPalette: FunctionComponent<{ onSelect(colorIdx: number); selectedIdx: number; }> = (props) => {
     const boxSize = 16
@@ -944,19 +772,6 @@ const ColorPalette: FunctionComponent<{ onSelect(colorIdx: number); selectedIdx:
             }
         </View >
     )
-}
-
-const displayJList = (weights: string) => {
-    return weights.toString().replace('[', '').replace(']', '')
-}
-
-// Converts list of num to stringified list
-const jList = (str: string): string => {
-    const S = str.trim()
-    if (!S) {
-        return JSON.stringify([])
-    }
-    return JSON.stringify(S.split(" ").map((strnum: string) => parseInt(strnum)))
 }
 
 
@@ -1100,7 +915,6 @@ const ItemPanel: FunctionComponent<{ item: WorkoutItemProps; schemeType: number;
     )
 }
 
-
 const verifyWorkoutItem = (_item: WorkoutItemProps, schemeType: number, schemeRounds: string): { success: boolean; errorType: number; errorMsg: string; } => {
     // For standard workouts: weights must match sets per item...
     // Reps are single and weights are multiple
@@ -1205,6 +1019,7 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
             })
             data.append('items', JSON.stringify(items));
             data.append('workout', createdWorkout.id)
+            data.append('workout_group', workoutGroupID)
             const createdItems = await createWorkoutItem(data).unwrap();
             console.log("Workout item res", createdItems)
 
@@ -1485,7 +1300,7 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
 
 export default CreateWorkoutScreen;
 export {
-    ItemString, ItemPanel, StrInput, NumberInput, numberInputStyle, Input,
+    ItemString, ItemPanel, numberInputStyle, Input,
     numFilter, numFilterWithSpaces, displayJList, jList, verifyWorkoutItem,
 }
 

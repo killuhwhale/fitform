@@ -11,7 +11,7 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.response import Response
 from gyms.serializers import (
     CombinedWorkoutGroupsSerializer, CompletedWorkoutCreateSerializer, CompletedWorkoutGroupsSerializer,
-    CompletedWorkoutSerializer, GymClassSerializerWithWorkoutsCompleted, UserSerializer, UserWithoutEmailSerializer,
+    CompletedWorkoutSerializer, GymClassSerializerWithWorkoutsCompleted, ProfileGymClassFavoritesSerializer, ProfileGymFavoritesSerializer, ProfileWorkoutGroupsSerializer, UserSerializer, UserWithoutEmailSerializer,
     WorkoutCategorySerializer, GymSerializerWithoutClasses,
     BodyMeasurementsSerializer, Gym_ClassSerializer, GymSerializer, GymClassCreateSerializer,
     GymClassSerializer, GymClassSerializerWithWorkouts, WorkoutGroupsCreateSerializer, WorkoutSerializer,
@@ -20,15 +20,22 @@ from gyms.serializers import (
     GymClassFavoritesSerializer, GymFavoritesSerializer, LikedWorkoutsSerializer, WorkoutGroupsSerializer,
     WorkoutCreateSerializer, ProfileSerializer
 )
+
 from gyms.models import BodyMeasurements, CompletedWorkoutGroups, CompletedWorkoutItems, CompletedWorkouts, Gyms, GymClasses, WorkoutCategories, Workouts, WorkoutItems, WorkoutNames, Coaches, ClassMembers, GymClassFavorites, GymFavorites, LikedWorkouts, WorkoutGroups
 from django.db.models import Q, Exists
 import uuid
 from .s3 import s3Client
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from PIL import Image
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from itertools import chain
+import sendgrid
+import os
+from sendgrid.helpers.mail import Email, To, TemplateId, Mail
+
 s3_client = s3Client()
+
+User = get_user_model()
 
 GYM_FILES = 0
 CLASS_FILES = 1
@@ -524,12 +531,10 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             # For each WG, we want to use its ID and user_id
             # To see if records exist in CompletedWorkouGroups filter(user_id=user_id, workout_group_id=workout_group.id)
             workout_groups = WorkoutGroups.objects.filter(
-                owner_id=pk, owned_by_class=True)
+                owner_id=pk, owned_by_class=True).order_by('for_date')
 
         # Return from Microservice
-
         gym_class.workoutgroups_set = workout_groups
-        # TODO add attr userCanEdit?: boolean;
         user_is_gym_owner = is_gym_owner(request.user, gym_class.gym.id)
         user_is_coach = is_gymclass_coach(request.user, gym_class)
         user_can_edit = user_is_gym_owner or user_is_coach
@@ -594,7 +599,8 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
         # try:
         data = {**request.data.dict()}
         files = request.data.getlist("files", [])
-        del data['files']
+        if 'files' in data:
+            del data['files']
 
         # Models expects True/ False, coming from json, we get true/ false. Instead we store 0,1 and convert
         data['owned_by_class'] = jbool(data['owned_by_class'])
@@ -693,7 +699,12 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
         '''
         try:
             workout_group_id = pk
-            return Response(WorkoutGroupsSerializer(WorkoutGroups.objects.get(id=workout_group_id)).data)
+            return Response(
+                WorkoutGroupsSerializer(
+                    WorkoutGroups.objects.get(id=workout_group_id),
+                    context={'request': request, }
+                ).data
+            )
         except Exception as e:
             print(e)
             return Response("Failed get Gym class's workouts.")
@@ -843,10 +854,12 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
         title = data['title']
         caption = data['caption']
         workouts = json.loads(data['workouts'])
-
-        del data['files']
-        del data['workouts']
-        del data['workout_group']
+        if 'files' in data:
+            del data['files']
+        if 'workouts' in data:
+            del data['workouts']
+        if 'workout_group' in data:
+            del data['workout_group']
 
         comp_workout_group, newly_created = CompletedWorkoutGroups.objects.get_or_create(
             **{**data, 'caption': caption, 'media_ids': [], 'workout_group_id': workout_group_id, 'user_id': request.user.id})
@@ -1272,28 +1285,43 @@ class ProfileViewSet(viewsets.ViewSet):
         # Workouts created by user, FUTURE workouts completed by user.
         # Summary of workout load
         profile_data = dict()
-        workout_groups = WorkoutGroups.objects.filter(
-            owner_id=user_id, owned_by_class=False)
         profile_data['user'] = request.user
-
         user_id = request.user.id
-        wgs = WorkoutGroups.objects.filter(
-            owner_id=user_id, owned_by_class=False)
-        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id)
-
-        data = dict()
-        data['created_workout_groups'] = wgs
-        data['completed_workout_groups'] = cwgs
-
-        profile_data['workout_groups'] = data
-        profile_data['favorite_gyms'] = GymFavorites.objects.filter(
-            user_id=user_id)
-        profile_data['favorite_gym_classes'] = GymClassFavorites.objects.filter(
-            user_id=user_id)
         profile_data['measurements'] = BodyMeasurements.objects.filter(
             user_id=user_id)
 
         return Response(ProfileSerializer(profile_data,  context={'request': request, }).data)
+
+    @action(detail=False, methods=['GET'], permission_classes=[])
+    def gym_favs(self, request, pk=None):
+
+        data = dict()
+        user_id = request.user.id
+        data['favorite_gyms'] = GymFavorites.objects.filter(
+            user_id=user_id)
+        return Response(ProfileGymFavoritesSerializer(data,  context={'request': request, }).data)
+
+    @action(detail=False, methods=['GET'], permission_classes=[])
+    def gym_class_favs(self, request, pk=None):
+        data = dict()
+        user_id = request.user.id
+        data['favorite_gym_classes'] = GymClassFavorites.objects.filter(
+            user_id=user_id)
+        return Response(ProfileGymClassFavoritesSerializer(data,  context={'request': request, }).data)
+
+    @action(detail=False, methods=['GET'], permission_classes=[])
+    def workout_groups(self, request, pk=None):
+        user_id = request.user.id
+        workouts = dict()
+        data = dict()
+
+        wgs = WorkoutGroups.objects.filter(
+            owner_id=user_id, owned_by_class=False)
+        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id)
+        data['created_workout_groups'] = wgs
+        data['completed_workout_groups'] = cwgs
+        workouts['workout_groups'] = data
+        return Response(ProfileWorkoutGroupsSerializer(workouts,  context={'request': request, }).data)
 
 
 class StatsViewSet(viewsets.ViewSet):
@@ -1318,3 +1346,62 @@ class StatsViewSet(viewsets.ViewSet):
                 ), many=True
             ).data
         )
+
+
+class ResetPasswordEmailViewSet(viewsets.ViewSet):
+    '''
+     Returns workouts between a range of dates either for a user's workouts or a classes workouts.
+    '''
+    @ action(detail=False, methods=['POST'], permission_classes=[])
+    def send_reset_code(self, request, pk=None):
+        email = request.data.get("email")
+        generated_code = "1337godlike"
+        print(f"Sending {generated_code} to {email}")
+        # https://github.com/sendgrid/sendgrid-python/blob/main/use_cases/transactional_templates.md
+        # Store code and email in DB for 15mins
+        # resetPasswordKey
+        # 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
+        # Send Email
+        # sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+        sg = sendgrid.SendGridAPIClient(
+            api_key="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")
+        from_email = Email("killuhwhal3@gmail.com")
+        to_email = To(email)
+        # template = TemplateId('d-37c297a72a8243ca8f105a0137ec304d')
+        message = Mail(from_email, to_email)
+        message.dynamic_template_data = {
+            'reset_code': generated_code,
+        }
+        message.template_id = 'd-37c297a72a8243ca8f105a0137ec304d'
+
+        response = sg.send(message)
+
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+        # Return response
+
+        return Response({'data': "Email Sent!"})
+
+    @ action(detail=False, methods=['POST'], permission_classes=[])
+    def reset_password(self, request, pk=None):
+        email = request.data.get("email")
+        user_code = request.data.get("reset_code")
+        new_password = request.data.get("new_password")
+
+        # Get code based on Email, query with email
+        # Unique by email, only good for 20mins
+        # generated_code = "Query from ResetCodes.objects.get(email=email)"
+        generated_code = "1337godlike"
+
+        # If generated code not found based on Email
+        # return Resposne({'error': 'Invalid code for email'})
+
+        if user_code == generated_code:
+            # Change password
+            user = get_user_model().objects.get(email=email)
+            user.set_password(new_password)
+            user.save()
+            return Response({'data': "Password reset."})
+
+        return Response({'error': 'Failed to reset password.'})

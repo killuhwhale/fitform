@@ -156,7 +156,7 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
 
   console.log("Auth: ", loggedIn, isLoading, data)
   auth.listenLogout(() => {
-    console.log("Listen for logout")
+    console.log("Listened for logout")
     setLoggedIn(false);
   });
 

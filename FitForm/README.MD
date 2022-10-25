@@ -1,5 +1,6 @@
 
-
+# Gym Bay
+# FitForm
 
 brew install node
 brew install watchman
@@ -23,83 +24,53 @@ import { get, post } from "../utils/fetchAPI"
 
 const LIST_GYMS = "http://localhost:8000/gyms/";
 
-
-
-
 I have a login, and am storing tokens.
 
 TODOs
 
     HUGE:
-
-    - DONT ALLOW user to complete their own workout
-        - Check on backend when creating a Completed Workout,
-            - WorkoutGroup ownerid != user_id
-        - Front end: dont show button in that case.
-
-
-    - Need a mechanism to signal that workouts are done being added to the Workout Group.
-        - I want to avoid editing workouts after they are made.
-        - I want to delete and redo if the user needs to edit the workout
-        - add field to WorkoutGroups -> finished
-        - WHen not finished, show user the button to add workouts.
-        - Dont allow user to remove workouts when finished.
-        - Show confirmation dialog, informing of this feature.
-            - Once workout is finialized, no edits are allowed.
-            - Must delete and re-create to edit
-    
-
-    - Allow user to add a date to workoutGroup
-        - Workout Group
-            - dayRx => the day the workout was intended to be completed on
-        - Completed Workout Group
-            - dayCompleted => the day the workout was completed on
-        
-
-        The issue is:
-        If a user wants to add a multiple workoiuts on a single day, currently it will look like the user completed these when the WG was created.
-        So we need to add a field to the 2 models in order to know when the workoutGroup is supposed to be done, or when the completed workout group was completed....
-
-
-
-    Auth:
-        - Add user registration
         - Handle expired access tokens in Middleware
+            - This should be able to follow same mechanics as the other project.
+            - When access token returns an auth error, refresh w/ refresh token
+            - If successful, retry original attempt
+            - IF fails, return user to login page
 
-    Home:
-        - Filter gyms
-        - Filter classes
-        - Filter workout groups
+            -Aplslice might be tricky......
 
-    Cleanup:
-        - GymClassScreen
-            - organize header info
-        - Profile
-            - Settings Modal
-            - Stats btn
-        - WorkoutGroupCard
-            - Display correct information on card
-                - Incomplete/ complete
-                - This is a list of the users workout
-                    - This is either a WorkoutGroup created by user or a CompletedWorkoutGroup
-                    - On this view, all workouts are complete. 
-                    - API fills in some of this info, I think....
+        - Delete media from Digital Ocean when Entity is deleted
+            - This is gonna be tricky.
 
-    - Refresh Redux cache
+        - Reset password
+            - Provide old password and new password.
+
+        - Forgot password
+            - Triggger an action to send an email
+            - That email must contain a code that is associated with an email
+                - How does this work?
+                - Options:
+                    - Link to follow to web
+                    - Link that opens on mobile
+                    - Code that user can enter in app
+            - User enters email and code
+            - App looks up in resetPassword table
+            - If finds email code pair, allow reset.
+            - Send email, newpassword, and code to reset API Endpoint.
+            - Endpoint will check code again
+            - It updates new password
+            - It earases email/ code entry in resetPassword Table
+            - Returns response, and now user has changed password
+
+
+            1. Generate unique codes
+            2. Create resetPassword Table
+            3. Once stored in table, send an email w/ code
+            4. Create a cleanup script/ EOL to remove entries after 15mins old
+                
     
-    Features:
-        - Each Workout Group should display  [wgTitle by you | wgTitle ]
-            - So when the user is viewing their completed workout and toggling between the OG and Completed workouts,
-                it will be easier to tell which one they are looking at....  
+V2 Features:
+    Auth:
         - Edit User info
-            - Change pass
-            - Change username
-            - Remove account
-        
-        
-        -Edit workouts?
-            - This might be a tough decision
-                - At first thought, it seems best to delete and just re create it
+        - Change pass
+        - Remove account       
             
-           
-            
+ 

@@ -11,6 +11,7 @@ import bluish from "./../../../assets/bgs/bluish.png"
 import Icon from 'react-native-vector-icons/Ionicons';
 import { View } from "react-native";
 import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
+import { dateFormat } from "../../app_pages/StatsScreen";
 
 const CardBG = styled.ImageBackground`
     height: ${SCREEN_HEIGHT * 0.25}px;
@@ -77,7 +78,7 @@ const WorkoutGroupCard: FunctionComponent<WorkoutGroupCardProps> = (props) => {
     const navigation = useNavigation<GymClassScreenProps["navigation"]>();
     const handlePress = () => { navigation.navigate("WorkoutScreen", { data: props, editable: props.editable ? true : false }) };
 
-    console.log("WGCard: ", props)
+    // console.log("WGCard: ", props)
 
     return (
         <CardBG source={bluish} style={{
@@ -91,7 +92,7 @@ const WorkoutGroupCard: FunctionComponent<WorkoutGroupCardProps> = (props) => {
                             {props.caption}
                         </RegularText>
                         <SmallText>
-                            {props.date}
+                            {dateFormat(new Date(props.date))}
                         </SmallText>
                     </View>
 

@@ -41,6 +41,7 @@ export type RootStackParamList = {
     CreateWorkoutGroupScreen: {
         ownedByClass: boolean;
         ownerID?: string;
+        gymClassProps: GymClassCardProps;
     };
     CreateWorkoutScreen: {
         workoutGroupID: string;

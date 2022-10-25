@@ -77,7 +77,7 @@ const CreateGymClassScreen: FunctionComponent<Props> = ({ navigation }) => {
     const [isPrivate, setIsPrivate] = useState(false);
     const [createGymClass, { isLoading }] = useCreateGymClassMutation();
     const { data, isLoading: userGymsLoading, isSuccess, isError, error } = useGetUserGymsQuery("");
-    const [gym, setGym] = useState("");
+    const [gym, setGym] = useState(data && data.length > 0 ? data[0].id : 0);
     const pickerRef = useRef<any>();
 
 
@@ -98,7 +98,7 @@ const CreateGymClassScreen: FunctionComponent<Props> = ({ navigation }) => {
         console.log("FOrmdata")
         console.log("FOrmdata")
         console.log("FOrmdata")
-        console.log("FOrmdata", mainFile.fileName, mainFile.type)
+        console.log("FOrmdata", data)
 
         try {
             const gymClass = await createGymClass(data).unwrap();
@@ -112,7 +112,7 @@ const CreateGymClassScreen: FunctionComponent<Props> = ({ navigation }) => {
         }
         // TODO possibly dispatch to refresh data
     }
-    console.log("Main File", mainFile)
+
 
     const openGymPicker = () => {
         if (pickerRef.current) {

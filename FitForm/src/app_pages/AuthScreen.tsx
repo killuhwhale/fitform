@@ -11,10 +11,14 @@ import { useTheme } from 'styled-components'
 import { GymCardList } from '../app_components/Cards/cardList'
 import { useAppSelector, useAppDispatch } from '../redux/hooks'
 import { decrement, increment } from '../redux/slicers/slicer'
-import { useGetProfileViewQuery } from "../redux/api/apiSlice";
+import { useCreateUserMutation, useGetProfileViewQuery } from "../redux/api/apiSlice";
 import AuthManager from "../utils/auth";
 import * as RootNavigation from '../navigators/RootNavigation'
 import { View } from "react-native";
+import Input, { AutoCaptilizeEnum } from "../app_components/Input/input";
+import { ResetPassword } from "../app_components/email/email";
+import { validEmailRegex } from "../utils/algos";
+
 
 
 // import { RootStackParamList } from "../navigators/RootStack";
@@ -40,17 +44,32 @@ const AuthScreen: FunctionComponent = () => {
     // Access value
     // Access/ send actions
     const auth = AuthManager;
-    const [isSignIn, setIsSignIn] = useState(true)
+    const authModes = [0, 1, 2, 3]
+    const [authMode, setAuthMode] = useState(0)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [hidePassword, setHidePassword] = useState(true)
     const [emailHelperText, setEmailHelperText] = useState("")
     const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
 
+    const [registerUser, { isLoading: registerUserLoading }] = useCreateUserMutation();
+    const [newEmail, setNewEmail] = useState("")
+    const [newPassword, setNewPassword] = useState("")
+    const [newPasswordConfirm, setNewPasswordConfirm] = useState("")
+    const [hideNewPassword, setHideNewPassword] = useState(true)
+    const [mismatchPasswordText, setMismatchPasswordText] = useState("")
+
+    const [resetEmail, setResetEmail] = useState("")
+    const [resetCode, setResetCode] = useState("")
+    const [resetPassword, setResetPassword] = useState("")
+    const [resetEmailError, setResetEmailError] = useState("")
+    const [hideResetPassword, setHideResetPassword] = useState(false)
+
     const login = () => {
         console.log("Send login: ", email, password)
         auth.login(email, password);
     };
+
 
 
     const onEmailChange = (text: string) => {
@@ -73,44 +92,252 @@ const AuthScreen: FunctionComponent = () => {
         setPassword(text);
     };
 
+    const onNewEmailChange = (text: string) => {
+        setNewEmail(text);
+    };
 
+    const onNewPasswordChange = (text: string) => {
+        setNewPassword(text);
+    };
+
+    const onNewPasswordConfirmChange = (text: string) => {
+        if (text.length >= newPassword.length && newPassword !== text) {
+            console.log("Show error on helper text with Password confirm")
+            setMismatchPasswordText("Passwords do not match")
+        } else {
+            setMismatchPasswordText("")
+        }
+        setNewPasswordConfirm(text);
+    };
+
+
+    const register = async () => {
+        if (newEmail.length <= 0 || newPassword !== newPasswordConfirm) {
+            console.log("Unable to register user")
+            return
+        }
+
+        if (!registerUserLoading) {
+            console.log("Registering: ", newEmail, newPassword, newPasswordConfirm)
+            const data = new FormData()
+            data.append("email", newEmail)
+            data.append("password", newPassword)
+            const res = await registerUser(data).unwrap()
+            if (res?.id) {
+                console.log("Created user, refresh auth.", res)
+            }
+
+        }
+
+    }
+
+    const chagnePassword = () => {
+        console.log("Changing password: ", resetEmail, resetCode, resetPassword)
+    }
 
     // RootNavigation.navigate("HomePage", {})
     return (
         <PageContainer>
             <AuthContainer>
                 {
-                    isSignIn ?
+                    authModes[authMode] == 0 ?
                         <View style={{ height: '100%' }}>
 
-                            <View style={{ flex: 2 }}>
-                                <TextInput
-                                    style={{ height: 100 }}
-                                    onChangeText={onEmailChange.bind(this)}
-                                    label="Email"
-                                    value={email}
-                                    helperText={emailHelperText}
-                                    leading={props => <Icon name="person" {...props} />}
-                                />
-                                <TextInput
-                                    style={{ height: 100 }}
-                                    label="Password"
-                                    value={password}
-                                    onChangeText={onPasswordChange.bind(this)}
-                                    secureTextEntry={hidePassword}
-                                    trailing={props => <Icon name="eye" onPress={() => setHidePassword(!hidePassword)} {...props} />}
-                                />
+
+                            <View style={{ justifyContent: 'space-evenly', height: '35%' }}>
+                                <RegularText textStyles={{ textAlign: 'center', marginBottom: 16 }}>Sign In</RegularText>
+                                <View style={{ height: 55, marginBottom: 16 }}>
+                                    <Input
+                                        onChangeText={onEmailChange.bind(this)}
+                                        autoCapitalize={AutoCaptilizeEnum.None}
+                                        label=""
+                                        placeholder="Email"
+                                        containerStyle={{ backgroundColor: theme.palette.gray, borderTopStartRadius: 8, borderTopEndRadius: 8 }}
+                                        fontSize={16}
+                                        value={email}
+                                        leading={<Icon name="person" style={{ color: theme.palette.text }} />}
+                                        helperText={emailHelperText}
+                                    />
+                                </View>
+                                <View style={{ height: 55, marginBottom: 16 }}>
+                                    <Input
+                                        onChangeText={onPasswordChange.bind(this)}
+                                        label=""
+                                        placeholder="Password"
+                                        containerStyle={{ backgroundColor: theme.palette.gray, borderTopStartRadius: 8, borderTopEndRadius: 8 }}
+                                        fontSize={16}
+                                        value={password}
+                                        secureTextEntry={hidePassword}
+                                        leading={<Icon name="person" style={{ color: theme.palette.text }} onPress={() => setHidePassword(!hidePassword)} />}
+                                    />
+                                </View>
                             </View>
 
-                            <View style={{ flex: 2 }}>
-                                <Button onPress={() => { login() }} title="Sign In" />
+                            <View style={{ flexDirection: 'row' }}>
+                                <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                    <Button onPress={() => { setAuthMode(1) }} title="Sign Up" />
+                                </View>
+                                <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                    <Button onPress={() => { login() }} title="Sign In" />
+                                </View>
                             </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                    <Button onPress={() => { setAuthMode(2) }} title="Forgot password" />
+                                </View>
+                            </View>
+                            <View style={{ flex: 1 }}></View>
                         </View>
 
-                        :
-                        <>
-                            <RegularText>Sign Up</RegularText>
-                        </>
+                        : authModes[authMode] == 1 ?
+                            <View style={{ height: '100%' }}>
+                                <View style={{ height: '35%', alignContent: 'space-between', justifyContent: 'space-evenly' }}>
+                                    <RegularText textStyles={{ textAlign: 'center', marginBottom: 16 }}>Sign Up</RegularText>
+                                    <View style={{ height: 45, marginBottom: 16 }}>
+                                        <Input
+                                            onChangeText={onNewEmailChange.bind(this)}
+                                            autoCapitalize={AutoCaptilizeEnum.None}
+                                            label=""
+                                            placeholder="Email"
+                                            containerStyle={{ backgroundColor: theme.palette.gray, borderTopStartRadius: 8, borderTopEndRadius: 8 }}
+                                            fontSize={16}
+                                            value={newEmail}
+                                            leading={<Icon name="person" style={{ color: theme.palette.text }} />}
+                                            helperText={emailHelperText}
+                                        />
+                                    </View>
+
+                                    <View style={{ height: 45, marginBottom: 16 }}>
+                                        <Input
+                                            containerStyle={{ backgroundColor: theme.palette.gray, paddingLeft: 16, borderTopStartRadius: 8, borderTopEndRadius: 8 }}
+                                            label=""
+                                            placeholder="Password"
+                                            fontSize={16}
+                                            value={newPassword}
+                                            onChangeText={onNewPasswordChange.bind(this)}
+                                            secureTextEntry={hideNewPassword}
+                                            trailing={<Icon name="eye" style={{ fontSize: 24, color: theme.palette.text }} onPress={() => setHideNewPassword(!hideNewPassword)} />}
+                                        />
+                                    </View>
+
+                                    <View style={{ height: 45, marginBottom: 16 }}>
+                                        <Input
+                                            containerStyle={{ backgroundColor: theme.palette.gray, paddingLeft: 16, borderTopStartRadius: 8, borderTopEndRadius: 8 }}
+                                            placeholder="Password Confirm"
+                                            fontSize={16}
+                                            label=""
+                                            value={newPasswordConfirm}
+                                            onChangeText={onNewPasswordConfirmChange.bind(this)}
+                                            secureTextEntry={hideNewPassword}
+                                            helperText={mismatchPasswordText}
+                                            isError={mismatchPasswordText.length > 0}
+                                            trailing={<Icon name="eye" style={{ fontSize: 24, color: theme.palette.text }} onPress={() => setHideNewPassword(!hideNewPassword)} />}
+                                        />
+                                    </View>
+
+
+                                </View>
+                                <View style={{ flex: 2, flexDirection: 'row' }}>
+                                    <View style={{ width: '50%', height: 45, paddingHorizontal: 8 }} >
+                                        <Button onPress={() => { setAuthMode(0) }} title="Sign In" />
+                                    </View>
+                                    <View style={{ width: '50%', height: 45, paddingHorizontal: 8 }} >
+                                        <Button onPress={() => { register() }} title="Create Account" />
+                                    </View>
+                                </View>
+                                <View style={{ flex: 1 }}></View>
+                            </View>
+                            : authModes[authMode] == 2 ?
+                                <View style={{ alignItems: 'center', justifyContent: 'space-evenly', marginBottom: 32 }}>
+                                    <ResetPassword />
+                                    <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                                        <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                            <Button onPress={() => { setAuthMode(0) }} title="Sign in" />
+                                        </View>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                                        <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                            <Button onPress={() => { setAuthMode(3) }} title="Reset Password" />
+                                        </View>
+                                    </View>
+                                </View>
+                                :
+                                <View>
+
+
+
+
+                                    <RegularText> Show Input fields for email code, and new passwords here. Submit to backend to check for code validaiton, then change passowrd </RegularText>
+
+                                    <View style={{ height: 45, marginBottom: 16 }}>
+                                        <Input
+                                            containerStyle={{
+                                                backgroundColor: theme.palette.gray,
+                                                borderTopStartRadius: 8,
+                                                borderTopEndRadius: 8
+                                            }}
+                                            label=""
+                                            placeholder='Email'
+                                            isError={resetEmailError.length > 0}
+                                            helperText={resetEmailError}
+                                            autoCapitalize={AutoCaptilizeEnum.None}
+                                            onChangeText={(_email: string) => {
+                                                if (!validEmailRegex.test(_email)) {
+                                                    setResetEmailError("Invalid email")
+                                                } else if (resetEmailError.length) {
+                                                    setResetEmailError("")
+                                                }
+                                                setResetEmail(_email)
+                                            }
+                                            }
+                                            inputStyles={{ paddingLeft: 8 }}
+                                            value={resetEmail}
+
+                                        />
+                                    </View>
+                                    <View style={{ height: 45, marginBottom: 16 }}>
+                                        <Input
+                                            onChangeText={setResetCode}
+                                            autoCapitalize={AutoCaptilizeEnum.None}
+                                            label=""
+                                            placeholder="Reset code"
+                                            containerStyle={{
+                                                backgroundColor: theme.palette.gray,
+                                                borderTopStartRadius: 8,
+                                                borderTopEndRadius: 8
+                                            }}
+                                            fontSize={16}
+                                            value={resetCode}
+                                            leading={<Icon name="person" style={{ color: theme.palette.text }} />}
+                                        />
+                                    </View>
+
+                                    <View style={{ height: 45, marginBottom: 16 }}>
+                                        <Input
+                                            containerStyle={{ backgroundColor: theme.palette.gray, paddingLeft: 16, borderTopStartRadius: 8, borderTopEndRadius: 8 }}
+                                            label=""
+                                            placeholder="Password"
+                                            fontSize={16}
+                                            value={resetPassword}
+                                            onChangeText={setResetPassword}
+                                            secureTextEntry={hideResetPassword}
+                                            autoCapitalize={AutoCaptilizeEnum.None}
+                                            trailing={
+                                                <Icon name="eye"
+                                                    style={{ fontSize: 24, color: theme.palette.text }}
+                                                    onPress={() => setHideResetPassword(!hideResetPassword)}
+                                                />
+                                            }
+                                        />
+                                    </View>
+
+                                    <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                                        <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                            <Button onPress={() => { setAuthMode(2) }} title="Back" />
+                                            <Button onPress={() => { chagnePassword() }} title="Submit" />
+                                        </View>
+                                    </View>
+                                </View>
                 }
             </AuthContainer>
         </PageContainer >
