@@ -1,8 +1,5 @@
-import base64
-import io
+import environ
 import json
-import mimetypes
-import sys
 from typing import List
 from rest_framework import viewsets, status
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser, FileUploadParser
@@ -34,7 +31,8 @@ import os
 from sendgrid.helpers.mail import Email, To, TemplateId, Mail
 
 s3_client = s3Client()
-
+env = environ.Env()
+environ.Env.read_env()
 User = get_user_model()
 
 GYM_FILES = 0
@@ -1360,11 +1358,9 @@ class ResetPasswordEmailViewSet(viewsets.ViewSet):
         # https://github.com/sendgrid/sendgrid-python/blob/main/use_cases/transactional_templates.md
         # Store code and email in DB for 15mins
         # resetPasswordKey
-        # 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
-        # Send Email
-        # sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+
         sg = sendgrid.SendGridAPIClient(
-            api_key="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")
+            api_key=env('SENDGRID_API_KEY'))
         from_email = Email("killuhwhal3@gmail.com")
         to_email = To(email)
         # template = TemplateId('d-37c297a72a8243ca8f105a0137ec304d')
