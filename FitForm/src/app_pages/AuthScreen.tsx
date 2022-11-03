@@ -18,6 +18,8 @@ import { View } from "react-native";
 import Input, { AutoCaptilizeEnum } from "../app_components/Input/input";
 import { ResetPassword } from "../app_components/email/email";
 import { validEmailRegex } from "../utils/algos";
+import { post } from "../utils/fetchAPI";
+import { BASEURL } from "../utils/constants";
 
 
 
@@ -63,7 +65,8 @@ const AuthScreen: FunctionComponent = () => {
     const [resetCode, setResetCode] = useState("")
     const [resetPassword, setResetPassword] = useState("")
     const [resetEmailError, setResetEmailError] = useState("")
-    const [hideResetPassword, setHideResetPassword] = useState(false)
+    const [resetPasswordError, setResetPasswordError] = useState("")
+    const [hideResetPassword, setHideResetPassword] = useState(true)
 
     const login = () => {
         console.log("Send login: ", email, password)
@@ -74,7 +77,6 @@ const AuthScreen: FunctionComponent = () => {
 
     const onEmailChange = (text: string) => {
         // Todo add debounce to allow user to enter last few chars and then check...
-        console.log(text)
         if (text.indexOf("@") >= 0 && text.indexOf(".") >= 0) {
             if (!reg.test(text)) {
                 setEmailHelperText("Invalid email")
@@ -131,8 +133,26 @@ const AuthScreen: FunctionComponent = () => {
 
     }
 
-    const chagnePassword = () => {
+    const changePassword = async () => {
         console.log("Changing password: ", resetEmail, resetCode, resetPassword)
+        if (resetPasswordError.length > 0) {
+            setResetPasswordError('')
+        }
+
+        const res = await post(`${BASEURL}user/reset_password/`, {
+            email: resetEmail,
+            reset_code: resetCode,
+            new_password: resetPassword,
+        }).then(res => res.json())
+        console.log("res", res)
+        if (res.data) {
+            setAuthMode(0)
+            setResetCode("")
+            setResetEmail("")
+            setResetPassword("")
+        } else {
+            setResetPasswordError(res.error)
+        }
     }
 
     // RootNavigation.navigate("HomePage", {})
@@ -175,15 +195,15 @@ const AuthScreen: FunctionComponent = () => {
 
                             <View style={{ flexDirection: 'row' }}>
                                 <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
-                                    <Button onPress={() => { setAuthMode(1) }} title="Sign Up" />
+                                    <Button onPress={() => { setAuthMode(1) }} title="Sign Up" color={theme.palette.secondary.main} />
                                 </View>
                                 <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
-                                    <Button onPress={() => { login() }} title="Sign In" />
+                                    <Button onPress={() => { login() }} title="Sign In" color={theme.palette.primary.main} />
                                 </View>
                             </View>
-                            <View style={{ flexDirection: 'row' }}>
-                                <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
-                                    <Button onPress={() => { setAuthMode(2) }} title="Forgot password" />
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 64 }}>
+                                <View style={{ height: 45, width: '80%', paddingHorizontal: 8 }}>
+                                    <Button onPress={() => { setAuthMode(2) }} title="Forgot password" color={theme.palette.lightGray} />
                                 </View>
                             </View>
                             <View style={{ flex: 1 }}></View>
@@ -239,25 +259,24 @@ const AuthScreen: FunctionComponent = () => {
                                 </View>
                                 <View style={{ flex: 2, flexDirection: 'row' }}>
                                     <View style={{ width: '50%', height: 45, paddingHorizontal: 8 }} >
-                                        <Button onPress={() => { setAuthMode(0) }} title="Sign In" />
+                                        <Button onPress={() => { setAuthMode(0) }} title="Sign In" color={theme.palette.secondary.main} />
                                     </View>
                                     <View style={{ width: '50%', height: 45, paddingHorizontal: 8 }} >
-                                        <Button onPress={() => { register() }} title="Create Account" />
+                                        <Button onPress={() => { register() }} title="Create Account" color={theme.palette.primary.main} />
                                     </View>
                                 </View>
                                 <View style={{ flex: 1 }}></View>
                             </View>
                             : authModes[authMode] == 2 ?
-                                <View style={{ alignItems: 'center', justifyContent: 'space-evenly', marginBottom: 32 }}>
+                                <View style={{ alignItems: 'center', justifyContent: 'space-evenly', marginBottom: 32, marginTop: 64 }}>
                                     <ResetPassword />
-                                    <View style={{ flexDirection: 'row', marginTop: 16 }}>
+
+                                    <View style={{ flexDirection: 'row', marginTop: 64 }}>
                                         <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
-                                            <Button onPress={() => { setAuthMode(0) }} title="Sign in" />
+                                            <Button onPress={() => { setAuthMode(0) }} title="Sign in" color={theme.palette.secondary.main} />
                                         </View>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', marginTop: 16 }}>
                                         <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
-                                            <Button onPress={() => { setAuthMode(3) }} title="Reset Password" />
+                                            <Button onPress={() => { setAuthMode(3) }} title="Reset" color={theme.palette.primary.main} />
                                         </View>
                                     </View>
                                 </View>
@@ -267,7 +286,8 @@ const AuthScreen: FunctionComponent = () => {
 
 
 
-                                    <RegularText> Show Input fields for email code, and new passwords here. Submit to backend to check for code validaiton, then change passowrd </RegularText>
+                                    <RegularText textStyles={{ textAlign: 'center', marginBottom: 16 }}>Reset password</RegularText>
+                                    <RegularText textStyles={{ textAlign: 'center', marginBottom: 16 }}>{resetPasswordError}</RegularText>
 
                                     <View style={{ height: 45, marginBottom: 16 }}>
                                         <Input
@@ -278,6 +298,7 @@ const AuthScreen: FunctionComponent = () => {
                                             }}
                                             label=""
                                             placeholder='Email'
+                                            fontSize={16}
                                             isError={resetEmailError.length > 0}
                                             helperText={resetEmailError}
                                             autoCapitalize={AutoCaptilizeEnum.None}
@@ -334,7 +355,9 @@ const AuthScreen: FunctionComponent = () => {
                                     <View style={{ flexDirection: 'row', marginTop: 16 }}>
                                         <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
                                             <Button onPress={() => { setAuthMode(2) }} title="Back" />
-                                            <Button onPress={() => { chagnePassword() }} title="Submit" />
+                                        </View>
+                                        <View style={{ height: 45, width: '50%', paddingHorizontal: 8 }}>
+                                            <Button onPress={() => { changePassword() }} title="Submit" />
                                         </View>
                                     </View>
                                 </View>

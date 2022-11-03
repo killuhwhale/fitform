@@ -8,7 +8,7 @@ import { WorkoutGroupCardList } from '../app_components/Cards/cardList'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
-import { Modal, ScrollView, StyleSheet, View } from "react-native";
+import { ImageBackground, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { useCreateCoachMutation, useCreateMemberMutation, useDeleteCoachMutation, useDeleteGymClassMutation, useDeleteMemberMutation, useFavoriteGymClassMutation, useGetCoachesForGymClassQuery, useGetGymClassDataViewQuery, useGetMembersForGymClassQuery, useGetProfileGymClassFavsQuery, useGetProfileViewQuery, useGetUsersQuery, useUnfavoriteGymClassMutation } from "../redux/api/apiSlice";
 import { Button, IconButton } from "@react-native-material/core";
 import { GymClassCardProps } from "../app_components/Cards/types";
@@ -16,6 +16,8 @@ import { ActionCancelModal } from "./Profile";
 import { Picker } from "@react-native-picker/picker";
 import { filter } from "../utils/algos";
 import { Input } from "./input_pages/gyms/CreateWorkoutScreen";
+import bluish from "./../../assets/bgs/bluish.png"
+import greenGrad from "./../../assets/bgs/greenGrad.png"
 export type Props = StackScreenProps<RootStackParamList, "GymClassScreen">
 
 const GymClassScreenContainer = styled(Container)`
@@ -61,6 +63,10 @@ const ManageMembersModal: FunctionComponent<{
 
     const addNewMember = () => {
         console.log("Adding ", data[newMember])
+        if (data[newMember] == undefined) {
+            console.log("Invalid member")
+            return
+        }
         const user = data[newMember]
         const memberData = new FormData();
         memberData.append('user_id', user.id);
@@ -79,9 +85,38 @@ const ManageMembersModal: FunctionComponent<{
         removeMemberData.append('user_id', member.id)
         removeMemberData.append('gym_class', props.gymClassID)
         deleteMemberMutation(removeMemberData)
+        setMemberToRemove(-1)
+        setShowRemoveMember(false)
     }
 
-    const currentMemberToDelete = memberToRemove > -1 ? allMembers[memberToRemove].username : { username: '' }
+
+    const currentMemberToDelete = memberToRemove > -1 &&
+        allMembers.legngth > 0 && memberToRemove < allMembers.length ?
+        allMembers[memberToRemove]?.username :
+        { username: '' }
+
+    const [stringData, setOgData] = useState<string[]>(data ? data.map(user => user.username) : [])
+    const [filterResult, setFilterResult] = useState<number[]>(Array.from(Array(stringData.length).keys()).map((idx) => idx))
+    useEffect(() => {
+        setOgData(data ? data.map(user => user.username) : [])
+        setFilterResult(Array.from(Array(data?.length || 0).keys()).map((idx) => idx))
+        if (data?.length <= 0) {
+            setNewMember(-1) // When new term is entered, reset coach if no items in filtered result.
+        }
+    }, [data])
+
+    const [term, setTerm] = useState("");
+    const filterText = (term: string) => {
+        // Updates filtered data.
+        const { items, marks } = filter(term, stringData, { word: false })
+        setFilterResult(items)
+        setTerm(term)
+        if (items?.length <= 0) {
+            setNewMember(-1) // When new term is entered, reset coach if no items in filtered result.
+        } else {
+            setNewMember(items[0]) // Update new Coach to  firs filtered result.
+        }
+    }
     return (
         <Modal
             animationType="slide"
@@ -96,28 +131,48 @@ const ManageMembersModal: FunctionComponent<{
                     </View>
 
 
-                    <View style={{ flex: 2, width: '100%' }}>
+                    <View style={{ flex: 3, width: '100%' }}>
                         {
                             !usersLoading ?
                                 <View style={{ justifyContent: 'flex-start' }}>
-
+                                    <View style={{ height: 40, marginTop: 16 }}>
+                                        <Input
+                                            onChangeText={filterText}
+                                            value={term}
+                                            containerStyle={{
+                                                width: '100%',
+                                                backgroundColor: theme.palette.lightGray,
+                                                borderRadius: 8,
+                                                paddingHorizontal: 8,
+                                            }}
+                                            leading={
+                                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                                            }
+                                            label=""
+                                            placeholder="Search users"
+                                        />
+                                    </View>
                                     <Picker
                                         ref={pickerRef}
-                                        style={{ height: 100 }}
+                                        style={{ height: 180, }}
+
                                         itemStyle={{
-                                            height: 100,
+                                            height: '100%',
+                                            fontSize: 16,
                                             color: theme.palette.text,
                                             backgroundColor: theme.palette.backgroundColor
                                         }}
 
+
                                         selectedValue={newMember}
                                         onValueChange={(itemValue, itemIndex) =>
-                                            setNewMember(itemIndex)
+                                            setNewMember(itemValue)
                                         }>
                                         {
-                                            data.map((user, i) => {
+                                            filterResult.map((filtered_index) => {
+                                                const user = data[filtered_index]
                                                 return (
-                                                    <Picker.Item key={user.id} label={user.username} value={i} />
+                                                    <Picker.Item key={user.id} label={user.username} value={filtered_index} />
                                                 );
                                             })
                                         }
@@ -193,8 +248,8 @@ const ManageCoachesModal: FunctionComponent<{
 }> = (props) => {
     const theme = useTheme();
     const pickerRef = useRef<any>();
-    const [newCoach, setNewCoach] = useState(0);
     const { data, isLoading: usersLoading, isSuccess, isError, error } = useGetUsersQuery('');
+    const [newCoach, setNewCoach] = useState(data?.length > 0 ? 0 : -1); // if we have users, init to 0, the first user, else we do not have any coaches to add
     const { data: allCoaches, isLoading: coachesLoading, isSuccess: coachesIsSuccess, isError: coachesIsError, error: coachesError } = useGetCoachesForGymClassQuery(props.gymClassID);
     const [createCoachMutation, { isLoading }] = useCreateCoachMutation();
     const [deleteCoachMutation, { isLoading: deleteCoachIsLoading }] = useDeleteCoachMutation();
@@ -204,7 +259,11 @@ const ManageCoachesModal: FunctionComponent<{
     console.log("Coaches user data:  ", allCoaches)
 
     const addNewCoach = () => {
-        console.log("Adding ", data[newCoach])
+        console.log("Adding ", newCoach, data[newCoach])
+        if (data[newCoach] == undefined) {
+            console.log("Invalid member")
+            return
+        }
         const user = data[newCoach]
         const coachData = new FormData();
         coachData.append('user_id', user.id);
@@ -217,15 +276,50 @@ const ManageCoachesModal: FunctionComponent<{
         setCoachToRemove(coachIdx)
     }
 
-    const removeCoach = () => {
+    const removeCoach = async () => {
         const coach = allCoaches[coachToRemove];
+        console.log("Reoving coach: ", coach, coachToRemove, allCoaches)
         const removeCoachData = new FormData()
-        removeCoachData.append('user_id', coach.id)
+        removeCoachData.append('user_id', coach?.id)
         removeCoachData.append('gym_class', props.gymClassID)
-        deleteCoachMutation(removeCoachData)
+        const res = await deleteCoachMutation(removeCoachData).unwrap()
+        console.log("del res", res)
+        setCoachToRemove(-1)
+        setShowRemoveCoach(false)
+        if (res.data) {
+
+        }
     }
 
-    const currentCoachToDelete = coachToRemove > -1 ? allCoaches[coachToRemove].username : { username: '' }
+    const currentCoachToDelete = coachToRemove > -1 &&
+        allCoaches.legngth > 0 &&
+        coachToRemove < allCoaches.length ?
+        allCoaches[coachToRemove]?.username
+        :
+        { username: '' }
+
+    const [stringData, setOgData] = useState<string[]>(data ? data.map(user => user.username) : [])
+    const [filterResult, setFilterResult] = useState<number[]>(Array.from(Array(stringData.length).keys()).map((idx) => idx))
+    useEffect(() => {
+        setOgData(data ? data.map(user => user.username) : [])
+        setFilterResult(Array.from(Array(data?.length || 0).keys()).map((idx) => idx))
+        if (data?.length <= 0) {
+            setNewCoach(-1) // When new term is entered, reset coach if no items in filtered result.
+        }
+    }, [data])
+
+    const [term, setTerm] = useState("");
+    const filterText = (term: string) => {
+        // Updates filtered data.
+        const { items, marks } = filter(term, stringData, { word: false })
+        setFilterResult(items)
+        setTerm(term)
+        if (items?.length <= 0) {
+            setNewCoach(-1) // When new term is entered, reset coach if no items in filtered result.
+        } else {
+            setNewCoach(items[0]) // Update new Coach to  firs filtered result.
+        }
+    }
     return (
         <Modal
             animationType="slide"
@@ -240,28 +334,48 @@ const ManageCoachesModal: FunctionComponent<{
                     </View>
 
 
-                    <View style={{ flex: 2, width: '100%' }}>
+                    <View style={{ flex: 3, width: '100%' }}>
                         {
                             !usersLoading ?
                                 <View style={{ justifyContent: 'flex-start' }}>
+                                    <View style={{ height: 40, marginTop: 16 }}>
+                                        <Input
+                                            onChangeText={filterText}
+                                            value={term}
+                                            containerStyle={{
+                                                width: '100%',
+                                                backgroundColor: theme.palette.lightGray,
+                                                borderRadius: 8,
+                                                paddingHorizontal: 8,
+                                            }}
+                                            leading={
+                                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                                            }
+                                            label=""
+                                            placeholder="Search users"
+                                        />
+                                    </View>
 
                                     <Picker
                                         ref={pickerRef}
-                                        style={{ height: 100 }}
+                                        style={{ height: 180, }}
+
                                         itemStyle={{
-                                            height: 100,
+                                            height: '100%',
+                                            fontSize: 16,
                                             color: theme.palette.text,
                                             backgroundColor: theme.palette.backgroundColor
                                         }}
 
                                         selectedValue={newCoach}
                                         onValueChange={(itemValue, itemIndex) =>
-                                            setNewCoach(itemIndex)
+                                            setNewCoach(itemValue)
                                         }>
                                         {
-                                            data.map((user, i) => {
+                                            filterResult.map((filtered_index) => {
+                                                const user = data[filtered_index]
                                                 return (
-                                                    <Picker.Item key={user.id} label={user.username} value={i} />
+                                                    <Picker.Item style={{ height: 5 }} key={user.id} label={user.username} value={filtered_index} />
                                                 );
                                             })
                                         }
@@ -388,9 +502,23 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
         setDeleteGymClassModalVisibleVisible(true)
     }
     const onDelete = async () => {
-        const deletedGym = await deleteGymClassMutation(id).unwrap();
+        // Pass data to invalidate tags in order to refresh class list
+        if (!gym || !id) {
+            console.log("Error deleting GymClass")
+            return
+        }
+
+        const data = {
+            gymID: gym,
+            gymClassID: id,
+        }
+        console.log("Deleting gymClass", data)
+        const deletedGym = await deleteGymClassMutation(data).unwrap();
         console.log("Deleted Gym: ", deletedGym)
         setDeleteGymClassModalVisibleVisible(false)
+        if (deletedGym.id) {
+            navigation.goBack()
+        }
     }
 
     // TODO replace with separate use...
@@ -399,11 +527,14 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
     // Search feature
     const [stringData, setOgData] = useState<string[]>(workoutGroups ? workoutGroups.map(group => group.title) : [])
     const [filterResult, setFilterResult] = useState<number[]>(Array.from(Array(stringData.length).keys()).map((idx) => idx))
+
+    // Init search with data, update each time we get new data
     useEffect(() => {
         setOgData(workoutGroups ? workoutGroups.map(group => group.title) : [])
         setFilterResult(Array.from(Array(workoutGroups?.length || 0).keys()).map((idx) => idx))
     }, [data])
 
+    // Filter current data
     const [term, setTerm] = useState("");
     const filterText = (term: string) => {
         // Updates filtered data.
@@ -413,21 +544,45 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
     }
     return (
         <GymClassScreenContainer>
+            <ImageBackground
+                source={greenGrad}
+                style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    width: SCREEN_WIDTH * .0314,
+                    height: SCREEN_HEIGHT * 0.0662607,
+
+                }}>
+            </ImageBackground>
+            <ImageBackground
+                source={greenGrad}
+                style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: SCREEN_WIDTH * .0314,
+                    height: SCREEN_HEIGHT * 0.0662607,
+
+                }}>
+            </ImageBackground>
 
             <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                justifyContent: 'center', width: "100%", flex: 1
+                flexDirection: 'row', alignItems: 'center', alignContent: 'center',
+                justifyContent: 'center', width: "100%", height: SCREEN_HEIGHT * 0.0662607,
             }}>
 
-                <View style={{ position: 'absolute', width: '90%' }}>
-                    <ScrollView horizontal>
-                        <RegularText textStyles={{ textAlign: 'center' }}>
-                            {title} {data?.user_is_gym_owner ? "(Owner)" : data?.user_is_coach ? "(Coach)" : ""}
-                        </RegularText>
+                <View style={{ position: 'absolute', width: '90%', alignItems: 'center', height: '100%', }}>
+                    <ScrollView horizontal style={{ marginRight: SCREEN_WIDTH * .0914 }}>
+                        <View style={{ alignContent: 'center', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                            <RegularText textStyles={{ textAlign: 'center' }}>
+                                {title} {data?.user_is_owner ? "(Owner)" : data?.user_is_coach ? "(Coach)" : ""}
+                            </RegularText>
+                        </View>
 
                     </ScrollView>
                 </View>
-                <View style={{ position: 'absolute', right: 5 }}>
+                <View style={{ position: 'absolute', right: SCREEN_WIDTH * .0314 }}>
                     {
                         dataGymClassFavs && !isLoadingGymClassFavs &&
                             isFavorited(dataGymClassFavs?.favorite_gym_classes) ?
@@ -445,14 +600,14 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
             </View>
 
             {
-                data?.user_is_gym_owner || data?.user_is_coach ?
+                data?.user_is_owner || data?.user_is_coach ?
                     <View style={{
                         flexDirection: 'row', alignItems: 'center',
                         justifyContent: 'flex-end', width: "100%", flex: 1
                     }}>
 
                         {
-                            data?.user_is_gym_owner ?
+                            data?.user_is_owner ?
                                 <View style={{ paddingHorizontal: 8 }}>
                                     <IconButton
                                         style={{ height: 24 }}
@@ -468,7 +623,7 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
                                 <></>
                         }
                         {
-                            data?.user_is_gym_owner || data?.user_is_coach ?
+                            data?.user_is_owner || data?.user_is_coach ?
                                 <View style={{ paddingHorizontal: 8 }}>
                                     <IconButton
                                         style={{ height: 24 }}
@@ -516,7 +671,7 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
                                 }}
                             />
                             {
-                                data?.user_is_gym_owner ?
+                                data?.user_is_owner ?
                                     <IconButton style={{ height: 24 }} icon={<Icon name='remove-circle-sharp' color="red" style={{ fontSize: 24 }} />} onPress={onConfirmDelete} />
                                     : <></>
                             }

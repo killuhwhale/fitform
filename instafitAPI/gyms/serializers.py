@@ -142,8 +142,9 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workouts
-        exclude = ('group', )
-        depth = 2
+        # exclude = ('group', )
+        fields = '__all__'
+        depth = 1
 
 
 class WorkoutCreateSerializer(serializers.ModelSerializer):

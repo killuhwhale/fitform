@@ -154,7 +154,8 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
   }
 
 
-  console.log("Auth: ", loggedIn, isLoading, data)
+  console.log("Auth: ", loggedIn, isLoading, data, isError)
+
   auth.listenLogout(() => {
     console.log("Listened for logout")
     setLoggedIn(false);
@@ -170,17 +171,9 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
   }
 
   let showError = false;
-  if ((data?.code ?? false) && (data?.detail ?? false) && (data?.messages ?? false)) {
-    console.log("we have an error code and need to refresh a token/ re-login or there is a real bad token")
-    console.log(data)
-    const { code, detail, messages } = data;
-    const message = messages[0];
 
-    // I want the middleware in ApiSlice to refresh token.
-    // Here, if we see a bad token of type: refresh, we will show login page.
-    if (message.message !== ERR_MESSAGE_INVALID_EXPIRED) {
-      showError = true;
-    }
+  if (!data) {
+    showError = true;
   }
 
   return (

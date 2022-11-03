@@ -1,6 +1,9 @@
 import React, { FunctionComponent, useState } from "react";
 import styled from "styled-components/native";
-import { COMPLETED_WORKOUT_MEDIA, Container, MEDIA_CLASSES, SCREEN_HEIGHT, SCREEN_WIDTH, WORKOUT_MEDIA } from "../app_components/shared";
+import {
+    COMPLETED_WORKOUT_MEDIA, Container, MEDIA_CLASSES, SCREEN_HEIGHT,
+    SCREEN_WIDTH, WORKOUT_MEDIA, processMultiWorkoutStats
+} from "../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText } from '../app_components/Text/Text'
 // import { withTheme } from 'styled-components'
 import { useTheme } from 'styled-components'
@@ -19,7 +22,7 @@ import {
 } from "../redux/api/apiSlice";
 import { Button, IconButton, Switch } from "@react-native-material/core";
 import Icon from 'react-native-vector-icons/Ionicons';
-import { processMultiWorkoutStats, StatsPanel } from "./WorkoutDetailScreen";
+import { StatsPanel } from "./WorkoutDetailScreen";
 import { MediaURLSlider } from "../app_components/MediaSlider/MediaSlider";
 import { ActionCancelModal } from "./Profile";
 export type Props = StackScreenProps<RootStackParamList, "WorkoutScreen">
@@ -45,62 +48,7 @@ const WorkoutScreenContainer = styled(Container)`
     width: 100%;
 `;
 
-const display_rep_scheme = (rounds: Array<number>) => {
-    let str = '';
-    console.log(rounds)
-    rounds.forEach(num => str += `${num}-`)
-    return `${str.slice(0, -1)}:`
-};
-
-
-const DisplayWorkout: FunctionComponent<WorkoutCardProps> = (props) => {
-    const { title, desc, scheme_type, scheme_rounds, date, workout_items, id } = props;
-    const scheme_rounds_list: Array<number> = JSON.parse(scheme_rounds);
-
-
-    return (
-        <View style={{ height: SCREEN_HEIGHT * 0.45 }}>
-            <Row style={{ flex: 5 }}>
-                <WorkoutInfoSection>
-                    <Row style={{ flex: 3 }}>
-                        <RegularText>{title}</RegularText>
-                    </Row>
-                    <Row style={{ flex: 2 }}>
-                        <SmallText>{desc}</SmallText>
-                    </Row>
-                    <Row style={{ flex: 1 }}>
-                        {scheme_type === 0 ?
-                            <>
-                                <SmallText>Standard workout </SmallText>
-                            </>
-                            : scheme_type === 1 ?
-                                <>
-                                    <SmallText>Rounds </SmallText>
-                                    <SmallText>{scheme_rounds_list[0]} Rounds</SmallText>
-                                </>
-                                : scheme_type == 2 ?
-                                    <>
-                                        <SmallText>Rep scheme</SmallText>
-                                        <SmallText>{display_rep_scheme(scheme_rounds_list)}</SmallText>
-                                    </>
-                                    : scheme_type == 3 ?
-                                        <>
-                                            <SmallText>Time scheme</SmallText>
-                                            <SmallText>{scheme_rounds_list[0]}mins of:</SmallText>
-                                        </>
-                                        : <SmallText>Workout scheme not found</SmallText>
-                        }
-                    </Row>
-                </WorkoutInfoSection>
-            </Row>
-            <Row style={{ flex: 20 }}>
-
-            </Row>
-        </View>
-    );
-};
-
-
+// 
 
 /**
  *  TODO() 
@@ -142,7 +90,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
     let completedError: any = ""
 
     const [finishWorkoutGroup, isLoading] = useFinishWorkoutGroupMutation()
-    console.log("Workout Screen Params: ", params)
+    // console.log("Workout Screen Params: ", params)
 
     if (owned_by_class == undefined) {
         // WE have a completed workout group
@@ -168,7 +116,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
     } else if (owned_by_class) {
         // we have OG workout owneed by class
         const { data, isLoading, isSuccess, isError, error } = useGetWorkoutsForGymClassWorkoutGroupQuery(id);
-        console.log("Owned by class, data: ", data)
+        // console.log("Owned by class, data: ", data)
         oGData = data
         oGIsLoading = isLoading
         oGIsSuccess = isSuccess
@@ -184,7 +132,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
             error: errorCompleted,
         } = useGetCompletedWorkoutByWorkoutIDQuery(id);
 
-        console.log("Completed data: ", dataCompleted)
+        // console.log("Completed data: ", dataCompleted)
 
         if (dataCompleted && dataCompleted.completed_workouts.length > 0) {
             completedData = dataCompleted
@@ -238,7 +186,8 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
 
     const [tags, names] = processMultiWorkoutStats(workouts)
 
-
+    console.log("Stats: ", tags, names)
+    console.log("WorkoutScreen data: ", oGData)
 
 
     const openCreateWorkoutScreenForStandard = () => {
@@ -275,14 +224,25 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
 
     const onDelete = async () => {
         if (showingOGWorkoutGroup) {
-            console.log("Deleting an OG Workout")
-            const deletedWorkoutGroup = await deleteWorkoutGroupMutation(id).unwrap();
+            const delData = new FormData()
+            delData.append('owner_id', oGData.owner_id)
+            delData.append('owned_by_class', oGData.owned_by_class)
+            delData.append('id', oGData.id)
+            console.log("Deleteing workout GORUP", delData)
+            const deletedWorkoutGroup = await deleteWorkoutGroupMutation(delData).unwrap();
+            console.log("Deleting result: ", deletedWorkoutGroup)
         } else {
-            console.log("Deleting a completed Workout")
-            const deletedWorkoutGroup = await deleteCompletedWorkoutGroup(id).unwrap();
+            const delData = new FormData()
+            delData.append('owner_id', completedData.owner_id)
+            delData.append('owned_by_class', completedData.owned_by_class)
+            delData.append('id', completedData.id)
+            console.log("Deleteing completed workout GORUP", delData)
+            const deletedWorkoutGroup = await deleteCompletedWorkoutGroup(delData).unwrap();
+            console.log("Del WG res: ", deletedWorkoutGroup)
 
         }
         setDeleteWorkoutGroupModalVisible(false)
+        navigation.goBack()
     }
 
     const _finishGroupWorkout = async () => {
@@ -305,7 +265,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
         }
     }
 
-    console.log("Current workout Group:", workoutGroup, oGData, completedData, isShowingOGWorkoutGroup, showingOGWorkoutGroup)
+    // console.log("Current workout Group:", workoutGroup, oGData, completedData, isShowingOGWorkoutGroup, showingOGWorkoutGroup)
     return (
         <WorkoutScreenContainer>
 
@@ -488,7 +448,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
             <ActionCancelModal
                 actionText="Delete Workout Group"
                 closeText="Close"
-                modalText={`Delete ${title}?`}
+                modalText={`Delete ${title} (${showingOGWorkoutGroup ? "Ori" : "Comp"})?`}
                 onAction={onDelete}
                 modalVisible={deleteWorkoutGroupModalVisible}
                 onRequestClose={() => setDeleteWorkoutGroupModalVisible(false)}

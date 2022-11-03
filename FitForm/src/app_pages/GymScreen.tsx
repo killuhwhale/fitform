@@ -8,7 +8,7 @@ import { GymClassCardList } from '../app_components/Cards/cardList'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
-import { View } from "react-native";
+import { ImageBackground, View } from "react-native";
 import { useFavoriteGymMutation, useGetGymDataViewQuery, useGetProfileGymClassFavsQuery, useGetProfileGymFavsQuery, useGetProfileViewQuery, useUnfavoriteGymMutation } from "../redux/api/apiSlice";
 import { ScrollView } from "react-native-gesture-handler";
 import { IconButton } from "@react-native-material/core";
@@ -17,7 +17,7 @@ import { filter } from "../utils/algos";
 import { Input } from "./input_pages/gyms/CreateWorkoutScreen";
 export type Props = StackScreenProps<RootStackParamList, "GymScreen">
 
-
+import bluish from "./../../assets/bgs/bluish.png"
 
 const GymScreenContainer = styled(Container)`
     background-color: ${props => props.theme.palette.backgroundColor};
@@ -99,7 +99,68 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
 
     return (
         <GymScreenContainer>
-            <View style={{ flex: 1 }}>
+            <ImageBackground
+                source={bluish}
+                style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    width: SCREEN_WIDTH * .0314,
+                    height: SCREEN_HEIGHT * 0.0662607,
+
+                }}>
+            </ImageBackground>
+            <ImageBackground
+                source={bluish}
+                style={{
+                    position: 'absolute',
+                    right: 0,
+                    left: 0,
+                    width: SCREEN_WIDTH * .0314,
+                    height: SCREEN_HEIGHT * 0.0662607,
+
+                }}>
+            </ImageBackground>
+
+            {/* <View style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: SCREEN_HEIGHT * 0.08, backgroundColor: 'red' }}>
+
+            </View> */}
+
+            <View style={{
+                flexDirection: 'row', alignItems: 'center', alignContent: 'center',
+                justifyContent: 'center', width: "100%", height: SCREEN_HEIGHT * 0.0662607,
+            }}>
+
+                <View style={{ position: 'absolute', width: '90%', alignItems: 'center', height: '100%' }}>
+                    <ScrollView horizontal style={{ marginRight: SCREEN_WIDTH * .0914 }} >
+                        <View style={{ alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
+                            <RegularText textStyles={{ textAlign: 'center', }}>
+                                {title} {data?.user_is_owner ? "(Owner)" : data?.user_is_coach ? "(Coach)" : ""}
+                            </RegularText>
+                        </View>
+                    </ScrollView>
+                </View>
+                <View style={{ position: 'absolute', right: SCREEN_WIDTH * .0314 }}>
+
+                    {
+                        dataGymFavs && !isLoadingGymFavs &&
+                            isFavorited(dataGymFavs.favorite_gyms) ?
+                            <View style={{ alignItems: 'center' }}>
+                                <IconButton style={{ height: 24 }} icon={<Icon name='star' color="red" style={{ fontSize: 24 }} />} onPress={() => unfavoriteGymMutation(favObj)} />
+                                <SmallText>Unfavorite</SmallText>
+                            </View>
+                            :
+                            <View style={{ alignItems: 'center' }}>
+                                <IconButton style={{ height: 24 }} icon={<Icon name='star' color="white" style={{ fontSize: 24 }} />} onPress={() => favoriteGymMutation(favObj)} />
+                                <SmallText>Favorite</SmallText>
+                            </View>
+                    }
+                </View>
+            </View>
+
+
+
+            {/* <View style={{ flex: 1 }}>
                 <View style={{
                     flexDirection: 'row', alignItems: 'center',
                     justifyContent: 'center', width: "100%"
@@ -118,7 +179,7 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
                         }
                     </View>
                 </View>
-            </View>
+            </View> */}
 
             <View style={{ flex: 2 }}>
                 <GymInfoBG source={{ uri: mainURL }}>

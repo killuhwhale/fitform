@@ -58,6 +58,10 @@ const AnimatedButton: FunctionComponent<{
         if (!pressAction.hasListeners()) {
             pressAction.addListener(v => setProValue(v.value))
         }
+
+        return () => {
+            pressAction.removeAllListeners()
+        }
     }, [willMountDep])
 
 
@@ -102,7 +106,7 @@ const AnimatedButton: FunctionComponent<{
     const getProgressStyles = () => {
         const width = pressAction.interpolate({
             inputRange: [0, 1],
-            outputRange: [0, buttonWidth + 10],
+            outputRange: [0, buttonWidth + 6],
         });
         const bgColor = pressAction.interpolate({
             inputRange: [0, 1],
@@ -110,8 +114,11 @@ const AnimatedButton: FunctionComponent<{
         });
         return {
             width: width,
-            height: buttonHeight + 10,
+            height: buttonHeight + 6,
             backgroundColor: bgColor,
+            borderRadius: 20,
+
+
         };
     }
 

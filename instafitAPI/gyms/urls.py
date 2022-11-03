@@ -19,8 +19,6 @@ router.register(r'classMembers', views.ClassMembersViewSet)
 router.register(r'bodyMeasurements', views.BodyMeasurementsViewSet)
 router.register(r'profile', views.ProfileViewSet, basename='profile')
 router.register(r'stats', views.StatsViewSet, basename='stats')
-router.register(r'resetPassword', views.ResetPasswordEmailViewSet,
-                basename='resetPassword')
 
 
 # Wire up our API using automatic URL routing.

@@ -80,6 +80,7 @@ export interface WorkoutItemListProps {
 
 export interface WorkoutCardProps {
     id: number;
+    group?: WorkoutGroupProps;
     workout_items?: Array<WorkoutItemProps>;
     completed_workout_items?: Array<WorkoutItemProps>;
     title: string;
@@ -112,6 +113,8 @@ export interface WorkoutGroupCardProps {
     editable?: boolean;
     userCanEdit?: boolean;
     completed?: boolean;
+    archived: boolean;
+    date_archived: string;
 }
 
 export interface WorkoutGroupCardListProps {
@@ -132,9 +135,11 @@ export interface WorkoutGroupProps {
     for_date: string;
     finished?: boolean;
     user_can_edit?: boolean;
-    user_is_gym_owner?: boolean;
+    user_is_owner?: boolean;
     user_is_coach?: boolean;
     completed?: boolean;
+    archived: boolean;
+    date_archived: string;
 
 }
 

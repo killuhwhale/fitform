@@ -22,6 +22,7 @@ import { GymCardProps, GymClassCardProps, WorkoutCardProps, WorkoutGroupCardProp
 import Input from "../app_components/Input/input";
 import { debounce } from "../utils/algos";
 import { ResetPassword } from "../app_components/email/email";
+import { ResetPasswordOld } from "../app_components/email/resetPasswordOld";
 
 export type Props = StackScreenProps<RootStackParamList, "Profile">
 
@@ -141,17 +142,10 @@ const UserInfoPanel: FunctionComponent<UserInfoPanelProps> = (props) => {
         }
     }
 
-
+    // Persist fucntion calls based on input params, allows debounce to work
     const updateUsername = useCallback(debounce(manageUpdateUsername, 5500), [])
 
-
-
-
-
-
-
-
-
+    // This cleanup function should run on unmount
     useEffect(() => {
         return function cleanup() {
             if (!savedUsername && username !== newUsername) {
@@ -159,9 +153,6 @@ const UserInfoPanel: FunctionComponent<UserInfoPanelProps> = (props) => {
             }
         }
     }, [props])
-
-
-
 
     return (
         <View style={{ width: '100%' }}>
@@ -433,6 +424,8 @@ const ProfileSettingsModal: FunctionComponent<{
 
                     </View>
 
+                    <ResetPasswordOld />
+
 
                     <View style={{ flexDirection: "row", alignItems: 'center', flex: 2 }}>
                         <Button onPress={props.onRequestClose} title='Close' style={{ backgroundColor: theme.palette.lightGray }} />
@@ -487,7 +480,12 @@ const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
     //     isSuccess: workoutGroupSuccess, isError: workoutGroupErr,
     //     error: workoutGroupError } = useGetUsersWorkoutGroupsQuery("");
 
-    console.log("Profile data: ", dataWG)
+    console.log("Profile data: ",
+        data,
+        dataWG,
+        dataGymFavs,
+        dataGymClassFavs,
+    )
     // Access/ send actions
     const dispatch = useAppDispatch();
     const [modalVisible, setModalVisible] = useState(false);
@@ -532,22 +530,22 @@ const Profile: FunctionComponent<Props> = ({ navigation, route }) => {
                             </View>
 
                             {
-                                dataGymClassFavs?.length > 0 ?
+                                dataGymFavs?.favorite_gyms.length > 0 ?
                                     <View style={{ flex: 3, width: "100%" }}>
                                         <SmallText>Favorite Gyms</SmallText>
                                         <ScrollView>
-                                            <FavGymsPanel data={dataGymFavs} />
+                                            <FavGymsPanel data={dataGymFavs?.favorite_gyms} />
                                         </ScrollView>
                                     </View>
                                     : <></>
                             }
 
                             {
-                                dataGymClassFavs?.length > 0 ?
+                                dataGymClassFavs?.favorite_gym_classes.length > 0 ?
                                     <View style={{ flex: 3, width: "100%" }}>
                                         <SmallText> Favorite Gym Classess</SmallText>
                                         <ScrollView>
-                                            <FavGymClassesPanel data={dataGymClassFavs} />
+                                            <FavGymClassesPanel data={dataGymClassFavs?.favorite_gym_classes} />
                                         </ScrollView>
                                     </View>
                                     : <></>

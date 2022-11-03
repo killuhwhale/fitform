@@ -3,6 +3,7 @@ import { BaseQueryFn, createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/r
 import { WorkoutCardProps } from '../../app_components/Cards/types'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASEURL } from '../../utils/constants';
+import { authDelete, authGet, authPost, refreshAccessToken } from '../../utils/fetchAPI';
 
 const JWT_ACCESS_TOKEN_KEY = "__jwttoken_access"
 const JWT_REFRESH_TOKEN_KEY = "__jwttoken_refresh"
@@ -71,26 +72,24 @@ const cacheTagWorkouts = "workouts"
 
 
 
-const asyncBaseQuery =
-    (
-        { baseUrl }: { baseUrl: string } = { baseUrl: '' }
-    ): BaseQueryFn<{ url: string; method?: string; data?: object; params?: { contentType: string; } }, any, { status: number, data: string; }> =>
-        async ({ url, method, data, params }) => {
+const asyncBaseQuery = ({ baseUrl }: { baseUrl: string } = { baseUrl: '' }):
+    BaseQueryFn<{
+        url: string;
+        method?: string;
+        data?: object;
+        params?: { contentType: string; }
+    },
+        any,
+        {
+            status: number, data: string;
+        }> => async ({ url, method, data, params }) => {
             try {
                 if (!method) {
                     method = "get";
                 }
                 const contentType = params?.contentType || 'application/json';
                 const authToken = await getToken();
-                // const authToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjYxMDczNDU5LCJpYXQiOjE2NjA4OTM0NTksImp0aSI6ImQzZTgxMWFkODhlOTQ1MzZiZjk4YTU3MDBmMWU5NDZlIiwidXNlcl9pZCI6MX0.nawTm7dl5JrAw_pFkQQSGOqrIQ--EPRX-xIHKMlhNCg';
-                // if (!authToken) {
-                //     return {
-                //         error: {
-                //             status: 403,
-                //             data: "Access token is no good",
-                //         }
-                //     }
-                // }
+
                 let options: { method: string; headers: any; body: any; } = {
                     method: method,
                     headers: {
@@ -104,6 +103,15 @@ const asyncBaseQuery =
                 console.log("Data: ", data)
                 console.log("url/ method: ", url, method)
 
+
+
+                /**  
+                 *  Problem is that APISlice will trigger 5 actions on a page load.
+                 * Each of which will try to get a new token when it is bad.
+                 * We need a better way to handle this.
+                 * 
+                 * 
+                 */
                 // Remove Authorization header when creating a new account
                 if (url === "users/" && method === "POST") {
                     delete options['headers']['Authorization']
@@ -113,14 +121,51 @@ const asyncBaseQuery =
                 if (data && params?.contentType !== "multipart/form-data") {
                     options.body = JSON.stringify(data);
                 } else {
-                    console.log("Data added to request body", data)
                     options.body = data;
-
                 }
 
+                // We make the first auth request using access token
                 const result = await fetch(baseUrl + url, options)
-                return { data: result.json() }
+                console.log("BaseQuery fetch response: ", result)
+                const jResult = await result.json()
+
+                // if token is expired:
+                if (result.status === 401 || jResult.code === "token_not_valid") {
+                    // Hit API w/ Refresh Token and update token.
+                    const refreshToken = await getToken(false)
+
+                    console.log("refreshToken: ", refreshToken)
+
+                    const res = await refreshAccessToken(`${BASEURL}token/refresh/`);
+                    if (res.status === 400) {
+                        console.log("refreshAccessToken resp BAD!", res)
+                        // TODO()
+                        // IF Refresh token is expired, deauth.
+                        // Return to sign in page.
+
+                        return { error: { status: 400, data: 'Refresh token is bad' } }
+                    } else {
+                        console.log("refreshAccessToken resp good:", res, url, method)
+                        const accessTokenResult = await res.json()
+                        await storeToken(accessTokenResult.access)
+
+                        if (method === "get" || method == "GET") {
+                            return { data: await (await authGet(baseUrl + url)).json() }
+                        } else if (method == 'post' || method == 'POST') {
+                            return { data: await (await authPost(baseUrl + url, options.body, contentType)).json() }
+                        } else if (method == 'delete' || method == 'DELETE') {
+
+                            // We need a body for Delete requests since we want permissions to work as well.
+                            return { data: await (await authDelete(baseUrl + url, options.body, contentType)).json() }
+                        }
+                    }
+                } else {
+                    return { data: jResult }
+                }
+                return { error: { status: 404, data: 'Errorneous behavior!' } }
+
             } catch (err: any) {
+                console.log("APISlice returning error!", err)
                 return {
                     error: {
                         status: 0,
@@ -139,15 +184,11 @@ export const apiSlice = createApi({
     // All of our requests will have URLs starting with '/fakeApi'
     baseQuery: asyncBaseQuery({ baseUrl: BASEURL }),
     tagTypes: [
-        'Gyms', 'User', 'GymClasses', 'GymClassWorkoutGroups',
-        "UserWorkoutGroups", 'WorkoutGroupWorkouts',
-
+        'Gyms', 'UserGyms', 'User', 'GymClasses', 'GymClassWorkoutGroups',
+        "UserWorkoutGroups", 'WorkoutGroupWorkouts', 'Coaches',
+        'Members', "GymFavs", "GymClassFavs",
     ],
-    // The "endpoints" represent operations and requests for this server
     endpoints: builder => ({
-        // The `getPosts` endpoint is a "query" operation that returns data
-
-
         // Users, Coaches and Members
         createUser: builder.mutation({
             query: (data = {}) => ({ url: 'users/', method: 'POST', data, params: { contentType: "multipart/form-data" } }),
@@ -161,24 +202,30 @@ export const apiSlice = createApi({
         }),
         createCoach: builder.mutation({
             query: (data = {}) => ({ url: 'coaches/', method: 'POST', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: (result, err, arg) => [{ type: 'Coaches', id: arg.gym_class }],
         }),
         getCoachesForGymClass: builder.query({
             // The URL for the request is '/fakeApi/posts'
             query: (id) => { return { url: `coaches/${id}/coaches/` } },
+            providesTags: (result, err, arg) => [{ type: "Coaches", id: arg }]
         }),
         deleteCoach: builder.mutation({
             query: (data = {}) => ({ url: 'coaches/remove/', method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: (result, error, arg) => [{ type: 'Coaches', id: result.gym_class }]
         }),
 
         createMember: builder.mutation({
             query: (data = {}) => ({ url: 'classMembers/', method: 'POST', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: (result, err, arg) => [{ type: 'Members', id: arg.gym_class }],
         }),
         getMembersForGymClass: builder.query({
             // The URL for the request is '/fakeApi/posts'
             query: (id) => { return { url: `classMembers/${id}/members/` } },
+            providesTags: (result, err, arg) => [{ type: "Members", id: arg }],
         }),
         deleteMember: builder.mutation({
             query: (data = {}) => ({ url: 'classMembers/remove/', method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: (result, error, arg) => [{ type: 'Members', id: result.gym_class }],
         }),
 
 
@@ -193,33 +240,43 @@ export const apiSlice = createApi({
         getUserGyms: builder.query({
             // The URL for the request is '/fakeApi/posts'
             query: () => { return { url: 'gyms/user_gyms/' } },
+            providesTags: ['UserGyms']
         }),
         createGym: builder.mutation({
             query: (data = {}) => ({ url: 'gyms/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
-            invalidatesTags: ['Gyms'],
+            invalidatesTags: ['Gyms', 'UserGyms'],
         }),
+
+
         favoriteGym: builder.mutation({
             query: (data) => ({ url: `gyms/favorite/`, method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: ['GymFavs'],
         }),
         unfavoriteGym: builder.mutation({
             query: (data) => ({ url: `gyms/unfavorite/`, method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: ['GymFavs'],
         }),
         deleteGym: builder.mutation({
             query: (id) => ({ url: `gyms/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            invalidatesTags: ['Gyms', 'GymFavs', 'UserGyms'],
         }),
         getGymDataView: builder.query({
             query: (id) => { return { url: `gyms/${id}/gymsclasses/` } },
-            providesTags: (result, error, arg) => result?.gym_classes ?
-                [...result?.gym_classes.map(({ id }) => ({ type: 'GymClasses', id }))]
-                :
-                ['GymClasses'],
+            // 
+            providesTags: (result, error, arg) => {
+                console.log("P0vide gym view: GymClasses", result)
+                return [{ type: 'GymClasses', id: result?.id }]
+            }
         }),
 
 
         // GymClass
         createGymClass: builder.mutation({
             query: (data = {}) => ({ url: 'gymClasses/', method: 'POST', data: data, params: { contentType: "multipart/form-data" } }),
-            invalidatesTags: (result, error, arg) => [{ type: 'GymClasses', id: arg.gym }],
+            invalidatesTags: (result, error, arg) => {
+                console.log("Create class invalidate: ", arg, result)
+                return [{ type: 'GymClasses', id: arg.gym }]
+            },
         }),
 
         getGymClassDataView: builder.query({
@@ -233,12 +290,15 @@ export const apiSlice = createApi({
 
         favoriteGymClass: builder.mutation({
             query: (data) => ({ url: `gymClasses/favorite/`, method: 'POST', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: ['GymClassFavs'],
         }),
         unfavoriteGymClass: builder.mutation({
             query: (data) => ({ url: `gymClasses/unfavorite/`, method: 'DELETE', data, params: { contentType: "multipart/form-data" } }),
+            invalidatesTags: ['GymClassFavs'],
         }),
         deleteGymClass: builder.mutation({
-            query: (id) => ({ url: `gymsClasses/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (data) => ({ url: `gymClasses/${data.gymClassID}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            invalidatesTags: (result, err, arg) => [{ type: 'GymClasses', id: arg.gymID }, 'GymClassFavs'], // Currently, favorites are fetched all at once and search in various places.
         }),
 
 
@@ -287,7 +347,17 @@ export const apiSlice = createApi({
             }
         }),
         deleteWorkoutGroup: builder.mutation({
-            query: (id) => ({ url: `workoutGroups/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (data) => {
+
+                const mapData = new Map<string, string>(data._parts)
+                return { url: `workoutGroups/${mapData.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
+            },
+            invalidatesTags: (result, err, arg) => {
+                const data = new Map<string, string>(arg._parts)
+                console.log("Invaldtes Tag deleteWorkoutGroup: ", data)
+                return data.get('owned_by_class') ?
+                    [{ type: 'GymClassWorkoutGroups', id: data.get('owner_id') }] : ['UserWorkoutGroups']
+            }
         }),
 
 
@@ -301,7 +371,18 @@ export const apiSlice = createApi({
             }
         }),
         deleteWorkout: builder.mutation({
-            query: (id) => ({ url: `workouts/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (arg) => {
+                const data = new Map<string, string>(arg._parts)
+                console.log("Deleting workout query", data)
+                return { url: `workouts/${data.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
+            },
+            invalidatesTags: (result, error, arg) => {
+                if (error) return []
+                const data = new Map<string, string>(arg._parts)
+                console.log("Invalidating workouts...,", data)
+                return [{ type: 'WorkoutGroupWorkouts', id: data.get('group') }]
+
+            }
         }),
 
 
@@ -366,7 +447,29 @@ export const apiSlice = createApi({
             }
         }),
         deleteCompletedWorkoutGroup: builder.mutation({
-            query: (id) => ({ url: `completedWorkoutGroups/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (data) => {
+                const mappedData = new Map<string, string>(data._parts)
+                return { url: `completedWorkoutGroups/${mappedData.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
+
+            },
+            invalidatesTags: (result, error, arg) => {
+                if (error) return []
+
+                const data = new Map<string, string>(arg._parts)
+                console.log("Invalidating compelted: ", data, { type: 'WorkoutGroupWorkouts', id: data.get('workout_group') })
+
+                // Cases: 
+                // 1. A user completes a WorkoutGroup from a gym Class
+                // 2. A user completes a WorkoutGroup from another User. 
+                //      - TODO() We do not have a search feature, to find other users workouts yet.
+                return [
+                    { type: 'WorkoutGroupWorkouts', id: data.get('workout_group') }, // Reset WorkoutScreen
+                    'UserWorkoutGroups', // Reset Profile workout list
+                    { type: 'GymClassWorkoutGroups', id: data.get('owner_id') }
+                ]
+
+
+            }
         }),
 
 
@@ -385,10 +488,12 @@ export const apiSlice = createApi({
             providesTags: ['UserWorkoutGroups']
         }),
         getProfileGymFavs: builder.query({
-            query: () => { return { url: `profile/gym_favs/`, } }
+            query: () => { return { url: `profile/gym_favs/`, } },
+            providesTags: ['GymFavs']
         }),
         getProfileGymClassFavs: builder.query({
-            query: () => { return { url: `profile/gym_class_favs/`, } }
+            query: () => { return { url: `profile/gym_class_favs/`, } },
+            providesTags: ['GymClassFavs']
         }),
 
         getUserInfo: builder.query({

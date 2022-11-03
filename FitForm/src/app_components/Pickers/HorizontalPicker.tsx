@@ -1,42 +1,25 @@
 import React, { FunctionComponent, useState } from "react";
-import { StyleSheet, TouchableWithoutFeedback, View } from "react-native";
-import styled from "styled-components/native";
-import { useTheme } from 'styled-components'
-import Icon from 'react-native-vector-icons/Ionicons';
-import { Button, IconButton, Switch } from "@react-native-material/core";
+import { StyleSheet, View } from "react-native";
+import { PanGestureHandler } from "react-native-gesture-handler";
+import MaskedView from "@react-native-masked-view/masked-view";
 import Animated, {
-    interpolate,
-    Extrapolate,
-    multiply,
-    cos,
-    sub,
-    asin,
-    divide,
-    useValue,
     useSharedValue,
     useAnimatedGestureHandler,
     useAnimatedStyle,
-    useCode,
-    set,
     withSpring,
 } from "react-native-reanimated";
 
-import MaskedView from "@react-native-masked-view/masked-view";
 import { SCREEN_WIDTH } from "../shared";
-
-import { RegularButton } from "../Buttons/buttons";
-import { RegularText, SmallText } from "../Text/Text";
-import { PanGestureHandler } from "react-native-gesture-handler";
-import { usePanGestureHandler } from "react-native-redash";
-
+import { SmallText } from "../Text/Text";
 
 
 {/* https://www.youtube.com/watch?v=PVSjPswRn0U&ab_channel=WilliamCandillon */ }
 const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number) }> = (props) => {
     const { data } = props
+    const _data = data?.length == 1 ? ['', data[0], ''] : data
     const [xState, setXState] = useState(0);
     const [startPos, setStartPos] = useState(0);
-    const [curIdx, setCurIdx] = useState(1)
+    const [curIdx, setCurIdx] = useState(0)
     const [prevIdx, setPrevIdx] = useState(1)
     const transX = useSharedValue(xState);
     const sharedStartPos = useSharedValue(startPos);
@@ -47,7 +30,7 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
     const sharedItemWidth = useSharedValue(itemWidth)
     const [wordSkew, setWordSkew] = useState(0)
     const sharedWordSkew = useSharedValue(wordSkew)
-
+    // iF data cotnains only 1 item, fix it in the middle, dont allow user to change
 
 
     const eventHandler = useAnimatedGestureHandler({
@@ -60,14 +43,23 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
             transX.value = event.translationX + sharedStartPos.value
             sharedWordSkew.value = event.translationX + sharedStartPos.value * 4
             setXState(transX.value)
-
-
         },
         onEnd: (event, ctx) => {
             const totalDistMoved = event.translationX
             const rawVal = totalDistMoved / sharedItemWidth.value
             const _numItemsTOMove = rawVal > 0 ? -Math.ceil(Math.abs(rawVal)) : Math.ceil(Math.abs(rawVal))
-
+            if (data.length != _data.length) {
+                // We have a padded array, do not change index.
+                const singeItemArrayIndex = 1
+                const moveTo = (singeItemArrayIndex * -sharedItemWidth.value) + sharedItemWidth.value;
+                sharedWordSkew.value = 0
+                transX.value = moveTo
+                setXState(moveTo)
+                sharedStartPos.value = moveTo
+                setStartPos(moveTo)
+                props.onChange(0)
+                return
+            }
             const numItemsTOMove = Math.max(-data.length - 1, Math.min(data.length - 1, _numItemsTOMove))
             const newIdx = Math.max(0, Math.min(data.length - 1, numItemsTOMove + sharedCurIdx.value))
 
@@ -83,14 +75,14 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
             setPrevIdx(curIdx)
             sharedPrevIdx.value = sharedCurIdx.value
             sharedCurIdx.value = newIdx
-            // console.log("onEnd newIdx: ", newIdx, sharedPrevIdx.value, sharedCurIdx.value, sharedPrevIdx.value != sharedCurIdx.value)
+
+            // Send new selected item
             if (sharedPrevIdx.value != sharedCurIdx.value) {
                 // console.log("onchange inside: ", props.onChange)
                 props.onChange(newIdx)
             }
-
         },
-    });
+    }, [data]);
 
     const uas = useAnimatedStyle(() => {
         return {
@@ -113,7 +105,7 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
                     ]}
                 >
                     {
-                        data.map((label, i) => {
+                        _data.map((label, i) => {
                             return (
                                 <Animated.View
                                     key={`${label}_${i}`}

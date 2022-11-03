@@ -1,6 +1,7 @@
 from enum import unique
 from django.db import models
 
+
 # Create your models here.
 
 
@@ -73,8 +74,10 @@ class WorkoutGroups(models.Model):
     caption = models.CharField(max_length=250)
     media_ids = models.CharField(max_length=1000, default='[]')  # json
     date = models.DateTimeField(auto_now_add=True)
-
+    archived = models.BooleanField(default=False)
+    date_archived = models.DateTimeField(blank=True, null=True)
     # -- Todo restrict by day, time doesnt matter.... target_date -> day the wor
+
     class Meta:
         unique_together = [["owner_id", "owned_by_class", "title"]]
 
@@ -220,6 +223,14 @@ class BodyMeasurements(models.Model):
 
     class Meta:
         unique_together = [["user_id", "date"]]
+
+
+class ResetPasswords(models.Model):
+
+    email = models.CharField(max_length=75, unique=True)
+    code = models.CharField(max_length=12, blank=False)
+    expires_at = models.DateTimeField(
+        blank=True, null=True)  # Updated on add only
 
 
 '''

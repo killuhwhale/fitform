@@ -11,7 +11,7 @@ import DocumentPicker from "react-native-document-picker";
 
 import { useTheme } from 'styled-components'
 import { useAppSelector, useAppDispatch } from '../../../redux/hooks'
-import { useCreateWorkoutGroupMutation, useGetWorkoutNamesQuery, useGetUsersWorkoutGroupsQuery } from "../../../redux/api/apiSlice";
+import { useCreateWorkoutGroupMutation, } from "../../../redux/api/apiSlice";
 import { MediaSlider } from "../../../app_components/MediaSlider/MediaSlider";
 
 
@@ -119,7 +119,7 @@ const CreateWorkoutGroupScreen: FunctionComponent<Props> = ({ navigation, route:
             const workoutGroup = await createWorkoutGroup(data).unwrap();
             console.log("Gym class res", workoutGroup)
             if (workoutGroup.id) {
-                // navigation.navigate("GymClassScreen", { ...gymClassProps })
+                navigation.goBack()
             }
 
         } catch (err) {

@@ -3,9 +3,9 @@ import styled from "styled-components/native";
 import { useTheme } from 'styled-components'
 import { SmallText, RegularText, LargeText, TitleText } from '../Text/Text'
 import { useNavigation } from "@react-navigation/native";
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
+import { displayJList, SCREEN_HEIGHT, SCREEN_WIDTH } from '../shared'
 import { GymClassCardProps, WorkoutCardProps } from "./types";
-import { displayJList, ItemString } from "../../app_pages/input_pages/gyms/CreateWorkoutScreen";
+import { ItemString } from "../../app_pages/input_pages/gyms/CreateWorkoutScreen";
 import { View } from "react-native";
 import { Props as GymClassScreenProps } from "../../app_pages/GymClassScreen";
 import { AnimatedButton } from "../Buttons/buttons";
@@ -51,7 +51,10 @@ const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
 
     const _deleteWorkout = () => {
         if (isOGWorkout) {
-            deleteWorkout(props.id)
+            const data = new FormData()
+            data.append("group", props.group?.id)
+            data.append("id", props.id)
+            deleteWorkout(data)
         } else {
             deleteCompletedWorkout(props.id)
         }

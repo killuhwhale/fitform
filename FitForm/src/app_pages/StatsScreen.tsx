@@ -5,10 +5,10 @@ import { useTheme } from 'styled-components'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button, IconButton, Switch } from "@react-native-material/core";
 import { SmallText, RegularText, LargeText, TitleText } from '../app_components/Text/Text'
-import { Container, SCREEN_HEIGHT, SCREEN_WIDTH, } from "../app_components/shared";
+import { Container, SCREEN_HEIGHT, SCREEN_WIDTH, processMultiWorkoutStats } from "../app_components/shared";
 import { RootStackParamList } from "../navigators/RootStack";
 import { StackScreenProps } from "@react-navigation/stack";
-import { processMultiWorkoutStats, WorkoutStats } from "./WorkoutDetailScreen";
+import { WorkoutStats } from "./WorkoutDetailScreen";
 import { useGetCompletedWorkoutGroupsForUserByDateRangeQuery } from "../redux/api/apiSlice";
 import { WorkoutCardProps, WorkoutGroupProps, WorkoutItemListProps, WorkoutItemProps } from "../app_components/Cards/types";
 import DatePicker from 'react-native-date-picker'
@@ -132,15 +132,23 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
     const calendarDayDelta = Math.max(35, _dayDelta)
 
     const [showTags, setShowTags] = useState(true);
-    const [showBarLineTags, setShowBarLineTags] = useState(true);
     const maxDataTypes = 9;
     const [showBarChartDataType, setShowBarChartDataType] = useState(0); // Which data to show in the BarChart [totalReps etc...]
-    const [showLineChartDataType, setShowLineChartDataType] = useState(1); // Which data to show in the LineChart [totalReps etc...]
-    const [showLineChartTagType, setShowLineChartTagType] = useState(1); // Which data to show in the LineChart
-    const [showLineChartNameType, setShowLineChartNameType] = useState(0); // Which data to show in the LineChart
-    const [calendarText, setCalendarText] = useState(initCalendarText); // Which data to show in the LineChart
 
-    const { data, isLoading, isSuccess, isError, error } = useGetCompletedWorkoutGroupsForUserByDateRangeQuery({ id: "0", startDate: dateFormat(startDate), endDate: dateFormat(endDate) })
+    const {
+        data,
+        isLoading,
+        isSuccess,
+        isError,
+        error
+    } = useGetCompletedWorkoutGroupsForUserByDateRangeQuery(
+        { id: "0", startDate: dateFormat(startDate), endDate: dateFormat(endDate) }
+    )
+
+
+
+    const [calendarText, setCalendarText] = useState(initCalendarText);
+
 
     let allWorkouts: WorkoutCardProps[] = []
     let workoutTagStats: {}[] = []
@@ -197,6 +205,13 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
         'sec',
     ]
     const dataReady = workoutTagStats.length || workoutNameStats.length
+    const [showBarLineTags, setShowBarLineTags] = useState(true);
+    const [showLineChartDataType, setShowLineChartDataType] = useState(1); // Which data to show in the LineChart [totalReps etc...]
+    // Default of 1 is good when we have at least 2 items. but when we have 1 we need it to be 0
+
+    const [showLineChartTagType, setShowLineChartTagType] = useState(tagLabels.length == 1 ? 0 : 1); // Which data to show in the LineChart
+    const [showLineChartNameType, setShowLineChartNameType] = useState(nameLabels.length == 1 ? 0 : 1); // Which data to show in the LineChart
+
     const BarData = barData(showTags ? tags : names, dataTypes[showBarChartDataType])
     const BLineData = bLineData(
         showBarLineTags ? workoutTagStats : workoutNameStats,
@@ -322,7 +337,7 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
 
                                 <View style={{ flex: 3, width: '100%', marginBottom: 24 }}>
                                     <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between' }}>
-                                        <RegularText>Total by date</RegularText>
+                                        <RegularText>Totals by date</RegularText>
                                         <HorizontalPicker key={`magic${showBarLineTags}`}
                                             data={
                                                 showBarLineTags && tagLabels.length > 0 ?
@@ -353,8 +368,8 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
                                                     // When the user changes between the 2 sets of data for the bLine Chart,
                                                     // The horizontal picker resets to to 1, so we need to update the data to reflect the change in the child component.
                                                     setShowBarLineTags(!showBarLineTags)
-                                                    setShowLineChartTagType(1)
-                                                    setShowLineChartNameType(1)
+                                                    setShowLineChartTagType(tagLabels.length == 1 ? 0 : 1)
+                                                    setShowLineChartNameType(nameLabels.length == 1 ? 0 : 1)
                                                 }} />
                                             <HorizontalPicker
                                                 data={dataTypeYAxisSuffix}

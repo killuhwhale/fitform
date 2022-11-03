@@ -47,9 +47,9 @@ const MIME_IMAGE = new Set(['png', 'jpeg', 'jpg',])
 
 const MediaURLItem: FunctionComponent<{ url: string; mediaClassID: number; mediaClass: string; }> = (props) => {
     const fileRefs = useRef<any>([]);
-    console.log("Item props", withSpaceURL(props.url, props.mediaClassID, props.mediaClass))
+    // console.log("Item props", withSpaceURL(props.url, props.mediaClassID, props.mediaClass))
     const mimeType = props.url.split(".").slice(-1)[0].toLowerCase()
-    console.log("Mimtype: ", mimeType, MIME_VIDEO.has(mimeType))
+    // console.log("Mimtype: ", mimeType, MIME_VIDEO.has(mimeType))
     return (
         <View style={{ paddingRight: 20 }}>
             {
@@ -124,7 +124,7 @@ const MediaURLSlider: FunctionComponent<MediaSliderURLProps> = (props) => {
     );
 }
 const MediaSlider: FunctionComponent<MediaSliderProps> = (props) => {
-    console.log("Screen Width: ", SCREEN_WIDTH)
+    // console.log("Screen Width: ", SCREEN_WIDTH)
     const screen_margin = 8;
     return (
         props.data != undefined ?

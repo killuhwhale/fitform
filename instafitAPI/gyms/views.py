@@ -1,6 +1,7 @@
+from datetime import datetime
 import environ
 import json
-from typing import List
+from typing import Dict, List
 from rest_framework import viewsets, status
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser, FileUploadParser
 from rest_framework.decorators import action
@@ -59,6 +60,18 @@ def is_gym_class_owner(user, gym_class):
     return user and gym_class and str(user.id) == str(gym_class.gym.owner_id)
 
 
+def to_err(msg, err_type=0):
+    return {
+        "error": msg, 'err_type': err_type
+    }
+
+
+def to_data(msg, data_type=0):
+    return {
+        "data": msg, 'data_type': data_type
+    }
+
+
 def is_gym_owner(user, gym_id):
     if not user or not gym_id:
         return False
@@ -83,7 +96,20 @@ def upload_media(files, parent_id, file_kind, start_id=0):
     return names
 
 
-def delete_media(parent_id, remove_media_ids, file_kind):
+def delete_media(parent_id, remove_media_ids, file_kind) -> Dict:
+    ''' Removes media from WorkoutGroups, CompletedWorkoutGroups, WorkoutItems
+        Structure is, for example:
+          fitform/file_kind/parent_id/media_id.png
+          fitform/gyms/1/main
+          fitform/classes/1/logo
+          fitform/users/1/profile_image
+          fitform/workouts/1/1.png
+          fitform/completedWorkouts/1/logo
+          fitform/names/1/logo
+
+
+    @parent_id: id of the WorkoutGroup/ CompleteWorkoutGroup etc...
+    '''
     removed = {}
     for id in remove_media_ids:
         if s3_client.remove(file_kind, parent_id, id):
@@ -136,13 +162,13 @@ class WorkoutPermission(BasePermission):
 
     def has_permission(self, request, view):
         # Need to check group id to see if the user has permission to do stuff.
-
+        print("Workout Perm: ", request.method,  view.action)
         if request.method in SAFE_METHODS:
             return True
         elif request.method == "POST" and view.action == "create":
             group_id = request.data.get("group", 0)
             if not group_id:
-                return Response("Error finding group id")
+                return Response(to_err("Error finding group id"))
 
             workout_group: WorkoutGroups = WorkoutGroups.objects.get(
                 id=group_id)
@@ -165,6 +191,8 @@ class WorkoutPermission(BasePermission):
                   request.user.id, workout_group.owner_id)
             if owned_by_class:
                 gym_class = GymClasses.objects.get(id=workout_group.owner_id)
+                print("Delet class owned workout:", request.user.id, gym_class.gym.id, is_gym_owner(
+                    request.user, gym_class.gym.id), is_gymclass_coach(request.user, gym_class))
                 return is_gym_owner(request.user, gym_class.gym.id) or is_gymclass_coach(request.user, gym_class)
             else:
                 return not owned_by_class and str(request.user.id) == str(workout_group.owner_id)
@@ -175,7 +203,7 @@ class WorkoutGroupsPermission(BasePermission):
                 for a class they own or are a coach of."""
 
     def has_permission(self, request, view):
-
+        print("Checking WorkoutGroup perm: ", request.method)
         if request.method in SAFE_METHODS:
             # Check permissions for read-only request
             return True
@@ -195,11 +223,13 @@ class WorkoutGroupsPermission(BasePermission):
             workout_group_id = view.kwargs['pk']
             workout_group = WorkoutGroups.objects.get(id=workout_group_id)
             owned_by_class = workout_group.owned_by_class
+            print(owned_by_class, workout_group,
+                  request.user.id, workout_group.owner_id)
             if owned_by_class:
                 gym_class = GymClasses.objects.get(id=workout_group.owner_id)
                 return is_gym_owner(request.user, gym_class.gym.id) or is_gymclass_coach(request.user, gym_class)
             else:
-                return not owned_by_class and request.user.id == workout_group.owner_id
+                return not owned_by_class and str(request.user.id) == str(workout_group.owner_id)
 
         return False
 
@@ -219,7 +249,7 @@ class EditWorkoutMediaPermission(BasePermission):
                 gym_class = GymClasses.objects.get(id=workout.owner_id)
                 return is_gym_class_owner(request.user, gym_class) or is_gymclass_coach(request.user, gym_class)
             else:
-                return request.user.id == workout.owner_id
+                return str(request.user.id) == str(workout.owner_id)
 
         return False
 
@@ -242,9 +272,9 @@ class CreateWorkoutItemsPermission(BasePermission):
                     workout_group = WorkoutGroups.objects.get(id)
                 except Exception as e:
                     print(e)
-                    return Response("Workout not found")
+                    return Response(to_err("Workout not found"))
                 if not workout or not workout_group:
-                    return Response("Failed to get workout information.")
+                    return Response(to_err("Failed to get workout information."))
 
                 owner_id = workout_group.owner_id
                 owned_by_class = workout_group.owned_by_class
@@ -259,7 +289,7 @@ class CreateWorkoutItemsPermission(BasePermission):
                           is_gym_class_owner(request.user, gym_class))
                     return is_gymclass_coach(request.user, gym_class) or is_gym_class_owner(request.user, gym_class)
                 else:
-                    return request.user.id == owner_id
+                    return str(request.user.id) == str(owner_id)
 
         return False
 
@@ -284,17 +314,21 @@ class RemoveCoachPermission(BasePermission):
     message = """Only gym owners can remove coaches."""
 
     def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            # Check permissions for read-only request
-            return True
+        try:
+            if request.method in SAFE_METHODS:
+                # Check permissions for read-only request
+                return True
 
-        elif request.method == "DELETE":
-            gym_class_id = request.data.get("gym_class", "0")
-            gym_class: GymClasses = GymClasses.objects.get(id=gym_class_id)
-            is_owner = is_gym_class_owner(request.user, gym_class)
-            print("User can remove coach /  is owner: ",
-                  is_owner, request.user.id, gym_class.gym.owner_id)
-            return is_owner
+            elif request.method == "DELETE":
+                print("Delete Coach data: ", request.data)
+                gym_class_id = request.data.get("gym_class", "0")
+                gym_class: GymClasses = GymClasses.objects.get(id=gym_class_id)
+                is_owner = is_gym_class_owner(request.user, gym_class)
+                print("User can remove coach /  is owner: ",
+                      is_owner, request.user.id, gym_class.gym.owner_id)
+                return is_owner
+        except Exception as e:
+            print("Error perm: remove coach. ", e)
 
         return False
 
@@ -339,24 +373,24 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
 
             gym, newly_created = Gyms.objects.get_or_create(**data)
             if not newly_created:
-                return Response("Gym already created. Must delete and reupload w/ media or edit gym.")
+                return Response(to_err("Gym already created. Must delete and reupload w/ media or edit gym."))
 
             parent_id = gym.id
             if main:
                 main_uploaded = s3_client.upload(
                     main, FILES_KINDS[GYM_FILES], parent_id, "main")
                 if not main_uploaded:
-                    return Response("Failed to upload main image")
+                    return Response(to_err("Failed to upload main image"))
             if logo != '':
                 logo_uploaded = s3_client.upload(
                     logo, FILES_KINDS[GYM_FILES], parent_id, "logo")
                 if not logo_uploaded:
-                    return Response("Failed to upload logo")
+                    return Response(to_err("Failed to upload logo"))
 
             return Response(GymSerializer(gym).data)
         except Exception as e:
             print(e)
-            return Response("Failed to create workout")
+            return Response(to_err("Failed to create workout"))
 
     @action(detail=True, methods=['get'], permission_classes=[])
     def user_favorites(self, request, pk=None):
@@ -365,7 +399,7 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
             return Response(GymFavoritesSerializer(GymFavorites.objects.filter(user_id=user_id), many=True).data)
         except Exception as e:
             print(e)
-            return Response("Failed get user's favorite gyms.")
+            return Response(to_err("Failed get user's favorite gyms."))
 
     @action(detail=False, methods=['post'], permission_classes=[])
     def favorite(self, request, pk=None):
@@ -375,10 +409,10 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
 
             GymFavorites.objects.create(
                 user_id=user_id, gym=Gyms.objects.get(id=gym_id))
-            return Response("Favorited!")
+            return Response(to_data("Favorited!"))
         except Exception as e:
             print(e)
-            return Response("Failed to favorite")
+            return Response(to_err("Failed to favorite"))
 
     @action(detail=False, methods=['DELETE'], permission_classes=[])
     def unfavorite(self, request, pk=None):
@@ -386,9 +420,9 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
             user_id = request.user.id
             gym_id = request.data.get("gym")
             GymFavorites.objects.get(user_id=user_id, gym=gym_id).delete()
-            return Response("Unfavorited!")
+            return Response(to_data("Unfavorited!"))
         except Exception as e:
-            return Response("Failed to unfavorite")
+            return Response(to_err("Failed to unfavorite"))
 
     @action(detail=True, methods=['get'], permission_classes=[])
     def gymsclasses(self, request, pk=None):
@@ -420,7 +454,7 @@ class GymViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymPermission):
             s3_client.upload(
                 logo_file, FILES_KINDS[GYM_FILES], parent_id, "logo")
 
-        return Response("Successfully added media to gym.")
+        return Response(to_data("Successfully added media to gym."))
 
         # except Exception as e:
         #     print(e)
@@ -458,7 +492,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             gym_class, newly_created = GymClasses.objects.get_or_create(
                 **{**data, "gym": gym})
             if not newly_created:
-                return Response("Gym class already created. Must delete and reupload w/ media or edit gym class.")
+                return Response(to_err("Gym class already created. Must delete and reupload w/ media or edit gym class."))
 
             parent_id = gym_class.id
             s3_client.upload(main, FILES_KINDS[CLASS_FILES], parent_id, "main")
@@ -467,7 +501,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             return Response(GymClassCreateSerializer(gym_class).data)
         except Exception as e:
             print(e)
-            return Response("Failed to create gymclass")
+            return Response(to_err("Failed to create gymclass"))
 
     @action(detail=True, methods=['get'], permission_classes=[])
     def user_favorites(self, request, pk=None):
@@ -476,7 +510,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             return Response(GymClassFavoritesSerializer(GymClassFavorites.objects.filter(user_id=user_id), many=True).data)
         except Exception as e:
             print(e)
-            return Response("Failed get user's favorite gym classes.")
+            return Response(to_err("Failed get user's favorite gym classes."))
 
     @action(detail=False, methods=['post'], permission_classes=[])
     def favorite(self, request, pk=None):
@@ -485,10 +519,10 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             gym_class_id = request.data.get("gym_class")
             GymClassFavorites.objects.create(
                 user_id=user_id, gym_class=GymClasses.objects.get(id=gym_class_id))
-            return Response("Favorited!")
+            return Response(to_data("Favorited!"))
         except Exception as e:
             print(e)
-            return Response("Failed to favorite")
+            return Response(to_err("Failed to favorite"))
 
     @action(detail=False, methods=['DELETE'], permission_classes=[])
     def unfavorite(self, request, pk=None):
@@ -497,14 +531,16 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             gym_class_id = request.data.get("gym_class")
             GymClassFavorites.objects.get(
                 user_id=user_id, gym_class=GymClasses.objects.get(id=gym_class_id)).delete()
-            return Response("Unfavorited!")
+            return Response(to_data("Unfavorited!"))
         except Exception as e:
-            return Response("Failed to unfavorite")
+            return Response(to_err("Failed to unfavorite"))
 
     @action(detail=True, methods=['get'], permission_classes=[])
     def workouts(self, request, pk=None):
         '''
             GymClass view, gets all related data for a GymClass.
+
+            only returned finished workouts unless the requesting user owns them
         '''
         user_id = request.user.id
         gym_class = None
@@ -512,38 +548,53 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             gym_class: GymClasses = self.queryset.get(id=pk)
         except Exception as e:
             print(e)
-            return Response("Invalid class")
-
-        print(is_gymclass_member(request.user, gym_class),
-              is_gymclass_coach(request.user, gym_class),
-              is_gym_owner(request.user, gym_class.gym.id))
+            return Response(to_err("Invalid class"))
 
         # If user is member or coach, they can see workouts from class...
         workout_groups = []  # Empty queryset
-        if (not gym_class.private or
-            is_gymclass_member(request.user, gym_class) or
-            is_gymclass_coach(request.user, gym_class) or
-                is_gym_owner(request.user, gym_class.gym.id)):
-            # Microservice TODO('Make request to workouts service')
 
-            # For each WG, we want to use its ID and user_id
-            # To see if records exist in CompletedWorkouGroups filter(user_id=user_id, workout_group_id=workout_group.id)
+        # Requesting user
+
+        # 1. is regular, non owner should only see WorkoutGroups finished
+        # - private matters here
+        # 2. User is owner or coach of class, can see unfinished
+        # - private does not matter here because we already know the user is owner/coach
+        user_is_member = is_gymclass_member(request.user, gym_class)
+        user_is_coach = is_gymclass_coach(request.user, gym_class)
+        user_is_owner = is_gym_owner(request.user, gym_class.gym.id)
+        is_private = gym_class.private
+
+        # Microservice TODO('Make request to workouts service')
+        workout_groups = None
+        if user_is_owner or user_is_coach:
+            # Show eveything
             workout_groups = WorkoutGroups.objects.filter(
-                owner_id=pk, owned_by_class=True).order_by('for_date')
+                owner_id=pk,
+                owned_by_class=True,
+                archived=False
+            ).order_by('for_date')
+        elif is_private and user_is_member or not is_private:
+            # Show finished workouts
+            workout_groups = WorkoutGroups.objects.filter(
+                owner_id=pk,
+                owned_by_class=True,
+                finished=True,
+                archived=False,
+            ).order_by('for_date')
 
         # Return from Microservice
         gym_class.workoutgroups_set = workout_groups
-        user_is_gym_owner = is_gym_owner(request.user, gym_class.gym.id)
-        user_is_coach = is_gymclass_coach(request.user, gym_class)
-        user_can_edit = user_is_gym_owner or user_is_coach
+
+        user_can_edit = user_is_owner or user_is_coach
 
         print(f"User can edit {user_can_edit}")
 
         return Response({
             **GymClassSerializerWithWorkoutsCompleted(gym_class, context={'request': request, }).data,
             "user_can_edit": user_can_edit,
-            "user_is_gym_owner": user_is_gym_owner,
+            "user_is_owner": user_is_owner,
             "user_is_coach": user_is_coach,
+            "user_is_member": user_is_member,
         })
 
     def get_serializer_class(self):
@@ -570,7 +621,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
             s3_client.upload(
                 logo_file, FILES_KINDS[CLASS_FILES], parent_id, "logo")
 
-        return Response("Successfully added media to gym class.")
+        return Response(to_data("Successfully added media to gym class."))
 
         # except Exception as e:
         #     print(e)
@@ -582,7 +633,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
 ########################################################
 
 
-class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, WorkoutGroupsPermission):
+class WorkoutGroupsViewSet(viewsets.ModelViewSet, WorkoutGroupsPermission):
     """
     API endpoint that allows users to be viewed or edited.
     """
@@ -608,14 +659,14 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
         workout_group, newly_created = WorkoutGroups.objects.get_or_create(
             **{**data, 'media_ids': []})
         if not newly_created:
-            return Response("Workout already create. Must delete and reupload w/ media or edit workout.")
+            return Response(to_err("Workout already create. Must delete and reupload w/ media or edit workout.", ))
 
         parent_id = workout_group.id
         uploaded_names = upload_media(
             files, parent_id, FILES_KINDS[WORKOUT_FILES])
         workout_group.media_ids = json.dumps([n for n in uploaded_names])
         workout_group.save()
-        return Response(WorkoutGroupsSerializer(workout_group).data)
+        return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
         # except Exception as e:
         #     print(e)
         #     return Response("Failed to create workout")
@@ -653,7 +704,7 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
         print("Updated Cur media ids: ", cur_media_ids)
         workout_group.media_ids = json.dumps(cur_media_ids)
         workout_group.save()
-        return Response("Successfully added media to workout")
+        return Response(to_data("Successfully added media to workout"))
 
         # except Exception as e:
         #     print(e)
@@ -674,22 +725,25 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             print("Filtered Current media ids: ", cur_media_ids)
             workout_group.media_ids = json.dumps(cur_media_ids)
             workout_group.save()
-            return Response("Deleted")
+            return Response(to_data("Deleted"))
         except Exception as e:
             print(e)
-            return Response("Failed to remove media")
+            return Response(to_err("Failed to remove media"))
 
     @ action(detail=True, methods=['get'], permission_classes=[])
     def user_workouts(self, request, pk=None):
         try:
+
             owner_id = request.user.id
+            print("Owner id", owner_id)
             workout_groups: WorkoutGroups = WorkoutGroups.objects.get(
                 owner_id=owner_id, owned_by_class=False, id=pk)
             # // Workout group is single group with multiple workouts
-            return Response(WorkoutGroupsSerializer(workout_groups).data)
+            return Response(WorkoutGroupsSerializer(workout_groups, context={'request': request, }).data)
         except Exception as e:
-            print(e)
-            return Response("Failed get user's workouts.")
+            print("\n\n\n\n\nWorkoutGroupsViewSet user_workouts", e)
+            print("Request", request)
+            return Response({'error': "Failed get user's workout group."}, status=500)
 
     @ action(detail=True, methods=['get'], permission_classes=[])
     def class_workouts(self, request, pk=None):
@@ -705,7 +759,7 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             )
         except Exception as e:
             print(e)
-            return Response("Failed get Gym class's workouts.")
+            return Response(to_err("Failed get Gym class's workouts."))
 
     @ action(detail=False, methods=['post'], permission_classes=[SelfActionPermission])
     def favorite(self, request, pk=None):
@@ -714,9 +768,9 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             workout_id = request.data.get("workout")
             LikedWorkouts.objects.create(
                 user_id=user_id, workout=workout_id)
-            return Response("Favorited!")
+            return Response(to_data("Favorited!"))
         except Exception as e:
-            return Response("Failed to favorite")
+            return Response(to_err("Failed to favorite"))
 
     @ action(detail=False, methods=['DELETE'], permission_classes=[SelfActionPermission])
     def unfavorite(self, request, pk=None):
@@ -725,9 +779,9 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             workout_id = request.data.get("workout")
             LikedWorkouts.objects.get(
                 user_id=user_id, workout=workout_id).delete()
-            return Response("Unfavorited!")
+            return Response(to_data("Unfavorited!"))
         except Exception as e:
-            return Response("Failed to unfavorite")
+            return Response(to_err("Failed to unfavorite"))
 
     @ action(detail=False, methods=['POST'], permission_classes=[])
     def finish(self, request, pk=None):
@@ -735,6 +789,8 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             user_id = request.user.id
             workout_group_id = request.data.get("group")
             workout_group = WorkoutGroups.objects.get(id=workout_group_id)
+            if not workout_group.workouts_set.exists():
+                return Response(to_data("Cannot finish workoutgroup without workouts."))
 
             # Permisson TODO create permission class
             if workout_group.owned_by_class:
@@ -749,13 +805,24 @@ class WorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, Worko
             workout_group.finished = True
             workout_group.save()
 
-            return Response(WorkoutGroupsSerializer(workout_group).data)
+            return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
         except Exception as e:
             print("Error finished group workout", e)
             return Response({"error": "Error finished group workout"})
 
+    def destroy(self, request, pk=None):
+        workout_group_id = pk
+        workout_group = WorkoutGroups.objects.get(id=workout_group_id)
+        if workout_group.finished:
+            workout_group.archived = True
+            workout_group.date_archived = datetime.now()
+            workout_group.save()
+            return Response(to_data("Finished workout requested to delete, archived instead."))
+        workout_group.delete()
+        return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
 
-class WorkoutsViewSet(viewsets.ModelViewSet, WorkoutPermission):
+
+class WorkoutsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, WorkoutPermission):
     """
     API endpoint that allows users to be viewed or edited.
     """
@@ -788,6 +855,15 @@ class WorkoutsViewSet(viewsets.ModelViewSet, WorkoutPermission):
             return WorkoutCreateSerializer
         return WorkoutSerializer
 
+    def destroy(self, request, pk=None):
+        workout_id = pk
+        workout = Workouts.objects.get(id=workout_id)
+        if workout.group.finished:
+            return Response(to_err("Cannot remove workouts form completed workout group"))
+
+        workout.delete()
+        return Response(WorkoutSerializer(workout).data)
+
 
 class WorkoutItemsViewSet(viewsets.ModelViewSet, CreateWorkoutItemsPermission):
     """
@@ -805,7 +881,7 @@ class WorkoutItemsViewSet(viewsets.ModelViewSet, CreateWorkoutItemsPermission):
 
             if not workout:
                 # TODO() Throw error?
-                return Response("Workout not found")
+                return Response(to_err("Workout not found"))
 
             print('Items', workout_items)
             print('Workout ID:', workout_id)
@@ -820,7 +896,7 @@ class WorkoutItemsViewSet(viewsets.ModelViewSet, CreateWorkoutItemsPermission):
             return Response(WorkoutItemSerializer(WorkoutItems.objects.bulk_create(items), many=True).data)
         except Exception as e:
             print(e)
-            return Response("Failed to insert")
+            return Response(to_err("Failed to insert"))
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
@@ -846,7 +922,6 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
         # try:
 
         data = {**request.data.dict()}
-        print(data)
         files = request.data.getlist("files", [])
         workout_group_id = data['workout_group']
         title = data['title']
@@ -858,6 +933,10 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
             del data['workouts']
         if 'workout_group' in data:
             del data['workout_group']
+
+        workout_group = WorkoutGroups.objects.get(id=workout_group_id)
+        if not workout_group.finished:
+            return Response(to_err("Cannot create completedWorkoutGroup for a non finished WorkoutGroup"))
 
         comp_workout_group, newly_created = CompletedWorkoutGroups.objects.get_or_create(
             **{**data, 'caption': caption, 'media_ids': [], 'workout_group_id': workout_group_id, 'user_id': request.user.id})
@@ -952,7 +1031,7 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
         print("Updated Cur media ids: ", cur_media_ids)
         workout_group.media_ids = json.dumps(cur_media_ids)
         workout_group.save()
-        return Response("Successfully added media to workout")
+        return Response(to_data("Successfully added media to workout"))
 
         # except Exception as e:
         #     print(e)
@@ -974,10 +1053,10 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
             print("Filtered Current media ids: ", cur_media_ids)
             workout_group.media_ids = json.dumps(cur_media_ids)
             workout_group.save()
-            return Response("Deleted")
+            return Response(to_data("Deleted"))
         except Exception as e:
             print(e)
-            return Response("Failed to remove media")
+            return Response(to_err("Failed to remove media"))
 
     @action(detail=False, methods=['get'], permission_classes=[])
     def workouts(self, request, pk=None):
@@ -989,7 +1068,7 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
             return Response(CompletedWorkoutGroupsSerializer(workout_groups).data)
         except Exception as e:
             print(e)
-            return Response("Failed get user's workouts.")
+            return Response(to_err("Failed get user's workouts."))
 
     @action(detail=True, methods=['get'], permission_classes=[])
     def completed_workout_group(self, request, pk=None):
@@ -1000,7 +1079,7 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
             return Response(CompletedWorkoutGroupsSerializer(workout_groups).data)
         except Exception as e:
             print(e)
-            return Response("Failed get user's workouts.")
+            return Response(to_err("Failed get user's completed_workout_group."))
 
     @action(detail=True, methods=['get'], permission_classes=[])
     def completed_workout_group_by_og_workout_group(self, request, pk=None):
@@ -1108,7 +1187,7 @@ class WorkoutNamesViewSet(viewsets.ModelViewSet):
             })
 
         if not newly_created:
-            return Response("Workout name already create. Must delete and reupload w/ media or edit workout name.")
+            return Response(to_data("Workout name already created. Must delete and reupload w/ media or edit workout name."))
 
         [workout_name.categories.add(c) for c in workoutCategories]
         workout_name.save()
@@ -1146,7 +1225,7 @@ class WorkoutNamesViewSet(viewsets.ModelViewSet):
         print("Updated Cur media ids: ", cur_media_ids)
         workout.media_ids = json.dumps(cur_media_ids)
         workout.save()
-        return Response("Successfully added media to workout")
+        return Response(to_data("Successfully added media to workout"))
 
         # except Exception as e:
         #     print(e)
@@ -1167,10 +1246,10 @@ class WorkoutNamesViewSet(viewsets.ModelViewSet):
             print("Filtered Current media ids: ", cur_media_ids)
             workout.media_ids = json.dumps(cur_media_ids)
             workout.save()
-            return Response("Deleted")
+            return Response(to_data("Deleted"))
         except Exception as e:
             print(e)
-            return Response("Failed to remove media")
+            return Response(to_err("Failed to remove media"))
 
 
 class WorkoutCategoriesViewSet(viewsets.ModelViewSet):
@@ -1206,11 +1285,11 @@ class CoachesViewSet(viewsets.ModelViewSet):
             coach = Coaches.objects.get(
                 user_id=remove_user_id, gym_class__id=gym_class_id)
             coach.delete()
+            return Response(to_data(CoachesSerializer(coach).data))
         except Exception as e:
             print(e)
-            return Response("Failed to remove coach")
 
-        return Response("Testing")
+        return Response(to_err("Failed to remove coach"))
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
@@ -1250,7 +1329,7 @@ class ClassMembersViewSet(viewsets.ModelViewSet):
             class_member.delete()
         except Exception as e:
             print(e)
-            return Response("Failed to remove class member")
+            return Response(to_err("Failed to remove class member"))
 
         return Response("Testing")
 
@@ -1344,60 +1423,3 @@ class StatsViewSet(viewsets.ViewSet):
                 ), many=True
             ).data
         )
-
-
-class ResetPasswordEmailViewSet(viewsets.ViewSet):
-    '''
-     Returns workouts between a range of dates either for a user's workouts or a classes workouts.
-    '''
-    @ action(detail=False, methods=['POST'], permission_classes=[])
-    def send_reset_code(self, request, pk=None):
-        email = request.data.get("email")
-        generated_code = "1337godlike"
-        print(f"Sending {generated_code} to {email}")
-        # https://github.com/sendgrid/sendgrid-python/blob/main/use_cases/transactional_templates.md
-        # Store code and email in DB for 15mins
-        # resetPasswordKey
-
-        sg = sendgrid.SendGridAPIClient(
-            api_key=env('SENDGRID_API_KEY'))
-        from_email = Email("killuhwhal3@gmail.com")
-        to_email = To(email)
-        # template = TemplateId('d-37c297a72a8243ca8f105a0137ec304d')
-        message = Mail(from_email, to_email)
-        message.dynamic_template_data = {
-            'reset_code': generated_code,
-        }
-        message.template_id = 'd-37c297a72a8243ca8f105a0137ec304d'
-
-        response = sg.send(message)
-
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
-        # Return response
-
-        return Response({'data': "Email Sent!"})
-
-    @ action(detail=False, methods=['POST'], permission_classes=[])
-    def reset_password(self, request, pk=None):
-        email = request.data.get("email")
-        user_code = request.data.get("reset_code")
-        new_password = request.data.get("new_password")
-
-        # Get code based on Email, query with email
-        # Unique by email, only good for 20mins
-        # generated_code = "Query from ResetCodes.objects.get(email=email)"
-        generated_code = "1337godlike"
-
-        # If generated code not found based on Email
-        # return Resposne({'error': 'Invalid code for email'})
-
-        if user_code == generated_code:
-            # Change password
-            user = get_user_model().objects.get(email=email)
-            user.set_password(new_password)
-            user.save()
-            return Response({'data': "Password reset."})
-
-        return Response({'error': 'Failed to reset password.'})

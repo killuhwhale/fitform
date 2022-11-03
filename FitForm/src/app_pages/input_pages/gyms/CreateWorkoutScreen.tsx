@@ -15,7 +15,7 @@ import { v4 as uuidv4, v1 as tsUUID } from 'uuid';
 import { SmallText, RegularText, LargeText, TitleText } from '../../../app_components/Text/Text'
 import {
     Container, SCREEN_WIDTH, DURATION_UNITS, DISTANCE_UNITS, SCREEN_HEIGHT,
-    WEIGHT_UNITS, WORKOUT_TYPES, STANDARD_W, ROUNDS_W, DURATION_W, REPS_W,
+    WEIGHT_UNITS, WORKOUT_TYPES, STANDARD_W, ROUNDS_W, DURATION_W, REPS_W, nanOrNah, numFilter, numFilterWithSpaces, parseNumList, jList, displayJList,
 } from "../../../app_components/shared";
 import { useAppSelector, useAppDispatch } from '../../../redux/hooks'
 import {
@@ -30,7 +30,7 @@ import { AnimatedButton } from "../../../app_components/Buttons/buttons";
 import { TouchableHighlight } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import * as RootNavigation from '../../../navigators/RootNavigation'
-import { parseNumList } from "../../WorkoutDetailScreen";
+
 import Input from "../../../app_components/Input/input";
 export type Props = StackScreenProps<RootStackParamList, "CreateWorkoutScreen">
 
@@ -65,29 +65,7 @@ const pickerStyle = StyleSheet.create({
         fontSize: 12,
     }
 })
-export const nanOrNah = (str: string) => {
-    return isNaN(parseInt(str)) ? 0 : parseInt(str);
-}
-const numFilter = (str: string): string => {
-    const r = str.replace(/[^0-9]/g, '');
-    return r
-}
-const numFilterWithSpaces = (str: string): string => {
-    const r = str.replace(/[^0-9\s]/g, '');
-    const hasSpace = r[r.length - 1] === " "
-    return hasSpace ? r.trim() + " " : r.trim();
-}
-const displayJList = (weights: string) => {
-    return weights.toString().replace('[', '').replace(']', '')
-}
-// Converts list of num to stringified list
-const jList = (str: string): string => {
-    const S = str.trim()
-    if (!S) {
-        return JSON.stringify([])
-    }
-    return JSON.stringify(S.split(" ").map((strnum: string) => parseInt(strnum)))
-}
+
 
 interface AddWorkoutItemProps {
     success: boolean;
@@ -130,6 +108,8 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkout
 
     const [weight, setWeight] = useState(initWeight);  // Json string list of numbers.
     const [weightUnit, setWeightUnit] = useState(initWeightUnit);  // Json string list of numbers.
+    const [weightError, setWeightError] = useState('');
+
     const [percentOfWeightUnit, setPercentOfWeightUnit] = useState(initPercentOfWeightUnit);  // Json string list of numbers.
 
     const [sets, setSets] = useState(initSets); // Need this for Standard workouts.
@@ -197,19 +177,55 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkout
 
     }
     const resetItem = () => {
-        setItem({ ...defaultItem, name: data[workoutName] });
+        // Reset item to default item values when user adds an item except
+        //   we need to preserve the units the user has changed.
+        setItem({
+            ...defaultItem,
+            name: data[workoutName],
+            distance_unit: distanceUnit,
+            duration_unit: durationUnit,
+            rest_duration_unit: restDurationUnit,
+            weight_unit: weightUnit,
+        });
     }
     const updateItem = (key, val) => {
         const newItem = item;
         newItem[key] = val
         setItem(newItem);
     }
-    const _addItem = (new_item) => {
+    const _addItem = () => {
         if (!item.name.name) {
             item.name = data[workoutName]
         }
 
-        console.log("_Adding item: ", item, new_item)
+        if (WORKOUT_TYPES[props.schemeType] == STANDARD_W) {
+            if (item.sets === 0) {
+                item.sets = 1 // ensure there is at least 1 set.
+            }
+
+            if (QuantityLabels[showQuantity] == "Reps" && parseInt(item.reps) === 0) {
+                item.reps = '1'
+            }
+            else if (QuantityLabels[showQuantity] == "Duration" && parseInt(item.duration) === 0) {
+                item.duration = '1'
+
+            } else if (QuantityLabels[showQuantity] == "Distance" && parseInt(item.distance) === 0) {
+                item.distance = '1'
+
+            }
+
+
+        } else if (WORKOUT_TYPES[props.schemeType] == REPS_W) {
+
+        } else if (WORKOUT_TYPES[props.schemeType] == ROUNDS_W) {
+
+        } else if (WORKOUT_TYPES[props.schemeType] == DURATION_W) {
+
+        }
+
+
+
+        console.log("_Adding item: ", item)
 
         // Checks if reps and weights match the repScheme
         const { success, errorType, errorMsg } = props.onAddItem(item)
@@ -226,11 +242,12 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkout
             console.log("Add item error: ", errorMsg)
             setRepsSchemeRoundsError(true)
             setRepsSchemeRoundsErrorText(errorMsg)
+        } else if (errorType == 3) {
+            // Invalid Weights
+            setWeightError(errorMsg)
         }
 
     }
-
-    console.log("Curren item: ", data)
 
     return (
         <View style={{ height: SCREEN_HEIGHT * 0.28, borderColor: 'white', borderWidth: 1.5, padding: 2 }}>
@@ -512,12 +529,17 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkout
                                 centerInput={true}
                                 fontSize={inputFontSize}
                                 value={weight}
+                                isError={weightError.length > 0}
+                                helperText={weightError}
                                 inputStyles={{ textAlign: 'center' }}
                                 onChangeText={(t) => {
                                     if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
                                         WORKOUT_TYPES[props.schemeType] == REPS_W ||
                                         WORKOUT_TYPES[props.schemeType] == ROUNDS_W
                                     ) {
+                                        if (weightError.length > 0) {
+                                            setWeightError("")
+                                        }
                                         updateItem('weights', numFilterWithSpaces(t))
                                         setWeight(numFilterWithSpaces(t))
                                     } else {
@@ -649,7 +671,7 @@ const AddItem: FunctionComponent<{ onAddItem(item: WorkoutItemProps): AddWorkout
             </View>
 
             <View style={{}} >
-                <Button onPress={() => _addItem(item)} title="Add Item" style={{ backgroundColor: theme.palette.lightGray }} />
+                <Button onPress={_addItem} title="Add Item" style={{ backgroundColor: theme.palette.lightGray }} />
             </View>
         </View >
     );
@@ -801,8 +823,8 @@ const ItemString: FunctionComponent<{ item: WorkoutItemProps; schemeType: number
                 }
 
                 {item.name.name}
-                {item.weights.length > 0 ? ` @ ${displayJList(item.weights)}` : ""}
-                {item.weights.length === 0 ? "" : item.weight_unit === "%" ? ` percent of ${item.percent_of}` : ` ${item.weight_unit}`}
+                {JSON.parse(item.weights).length > 0 ? ` @ ${displayJList(item.weights)}` : ""}
+                {JSON.parse(item.weights).length === 0 ? "" : item.weight_unit === "%" ? ` percent of ${item.percent_of}` : ` ${item.weight_unit}`}
                 {item.rest_duration > 0 ? ` Rest: ${item.rest_duration} ${DURATION_UNITS[item.rest_duration_unit]}` : ""}
             </SmallText>
         </View>
@@ -919,9 +941,13 @@ const verifyWorkoutItem = (_item: WorkoutItemProps, schemeType: number, schemeRo
     // For standard workouts: weights must match sets per item...
     // Reps are single and weights are multiple
     if (WORKOUT_TYPES[schemeType] == STANDARD_W) {
+        // check weights match sets 0 || 1 -> 1 or ==
         const itemSets = _item.sets
         const weightList = parseNumList(_item.weights)
-        if (weightList.length > 1 && itemSets != weightList.length) {
+        console.log("Verifyin Standard_w", weightList, itemSets, weightList.length)
+
+        if (itemSets != weightList.length && (weightList.length != 1)) {
+            console.log("Not VALID!")
             return { success: false, errorType: 3, errorMsg: 'Weights must match sets' }
         }
     }
@@ -1048,13 +1074,16 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
 
         const { success, errorType, errorMsg } = verifyWorkoutItem(_item, schemeType, schemeRounds)
 
-        if (!success && errorType === 0) {
-            setSchemeRoundsError(true)
+        if (!success) {
+            if (errorType === 0) {
+                setSchemeRoundsError(true)
+            }
             return { success, errorType, errorMsg }
         }
         if (schemeRoundsError) {
             setSchemeRoundsError(false)
         }
+
 
         _item.weights = jList(_item.weights)
         _item.reps = jList(_item.reps)
@@ -1301,6 +1330,5 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
 export default CreateWorkoutScreen;
 export {
     ItemString, ItemPanel, numberInputStyle, Input,
-    numFilter, numFilterWithSpaces, displayJList, jList, verifyWorkoutItem,
 }
 

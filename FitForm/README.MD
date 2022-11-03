@@ -28,45 +28,92 @@ I have a login, and am storing tokens.
 
 TODOs
 
-    HUGE:
-        - Handle expired access tokens in Middleware
-            - This should be able to follow same mechanics as the other project.
-            - When access token returns an auth error, refresh w/ refresh token
-            - If successful, retry original attempt
-            - IF fails, return user to login page
+    HUGE:  
 
-            -Aplslice might be tricky......
+    Add an Absolute View to GymScreen and GymClassScreen
+        - a little colored banner at top right to indicate gmy or class view
 
-        - Delete media from Digital Ocean when Entity is deleted
-            - This is gonna be tricky.
-
-        - Reset password
-            - Provide old password and new password.
-
-        - Forgot password
-            - Triggger an action to send an email
-            - That email must contain a code that is associated with an email
-                - How does this work?
-                - Options:
-                    - Link to follow to web
-                    - Link that opens on mobile
-                    - Code that user can enter in app
-            - User enters email and code
-            - App looks up in resetPassword table
-            - If finds email code pair, allow reset.
-            - Send email, newpassword, and code to reset API Endpoint.
-            - Endpoint will check code again
-            - It updates new password
-            - It earases email/ code entry in resetPassword Table
-            - Returns response, and now user has changed password
-
-
-            1. Generate unique codes
-            2. Create resetPassword Table
-            3. Once stored in table, send an email w/ code
-            4. Create a cleanup script/ EOL to remove entries after 15mins old
-                
+    Delete UI:
+        - Make User enter the name of the Gym/ GymClass/ Workout before deleting.
+            - it will delete a lot of data. so we should make really sure.
     
+    
+    Profile Settings Page
+        - onConfirm Logout modal
+        - Migrate update password to a modal
+
+
+
+    StatsScreen:
+        - On init visit:
+            - Select Kgs and nothing shows
+            - Click the toggle button and now data shows....
+        - Data show show when switching to KGS without needing to toggle the data first.
+
+
+
+    The big problem:
+        - WorkoutGroups and CompletedWorkoutGroups are tightly coupled in the DB
+        - So when deleting a WorkoutGroup/ Workout, the Completed Versions are removed too.            
+
+    Solution:
+    1. Users cannot finish a WorkoutGroup without Workouts.
+    1. Users cannot edit Workouts after Finishing
+    2. Users cannot complete workouts until they're marked as Finished.
+    3. Users cannot remove workouts once Finished but can Archive them. 
+        - Add field to WorkoutGroup: archived: True/ False
+        - This allows them to be hidden from search/ class workoutgroup list.
+
+        DB check:
+            - Creating Completed workout, reject if WorkoutGroup.finished = False
+            - Dont allow Workoutgroup to be Finished if no related Workouts exist
+            - Dont Allow Delete of WorkoutGroup, Workout, WorkoutItems if the WorkoutGroup is not finished
+        
+        Adding Field
+         - Add field: archived to WorkoutGroup
+         - Update WorkoutGroupProps
+            - might not need, this is really for the backed so we can filter WorkoutGroups.
+        - Update Queries for WorkoutGroups,
+            - Curently, any backend Views that query GET 
+                
+                - WorkoutGroups.objects.get -> maybe add archived=False
+                - WorkoutGroups.objects.filter(...., archived=False) 
+        
+        Frontend: APISlice Change Delete WorkoutGroup to ArchiveWorkoutGroup
+        In the future, we can create views to show Archived workouts?
+        - Or we can treat them as deleted...
+            - The user no longer see them
+            - We still have workout data
+            - Other users still have their Completed Workout
+                - We can always filter out the original workout based on ARchived. If Archived, we can return blank data instead.
+                    - Therefore, the UI logic will behave the same, except all the data will be empty
+                        - Strings => ""
+                        - numbers => 0
+                        - lists => []
+                    - Keep same shape of original data.
+                    - Will need to create a funtion to create a copy of the data and then "clear/reset" the values 
+
+                
+
+         
+         
+
+
+
+    Testing
+        gymClass
+         - private
+          - make sure correct users see data
+          - correct users add coaces, members
+
+        api
+            - basics
+            - permissions create, delete, add members/ coches 
+        frontend
+
+
+        Creating Workout
+           
 V2 Features:
     Auth:
         - Edit User info

@@ -2,7 +2,7 @@ import React, { FunctionComponent, useState, useContext, useCallback } from "rea
 import styled from "styled-components/native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Image, Modal, StyleSheet, View } from "react-native";
-import { Container, DURATION_W, REPS_W, ROUNDS_W, SCREEN_HEIGHT, SCREEN_WIDTH, STANDARD_W, WORKOUT_TYPES } from "../../../app_components/shared";
+import { Container, displayJList, DURATION_W, numFilter, numFilterWithSpaces, REPS_W, ROUNDS_W, SCREEN_HEIGHT, SCREEN_WIDTH, STANDARD_W, WORKOUT_TYPES } from "../../../app_components/shared";
 import { SmallText, RegularText, LargeText, TitleText } from '../../../app_components/Text/Text'
 import { AppBar, Button, IconButton, TextInput } from "@react-native-material/core";
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -22,7 +22,7 @@ import { MediaPicker } from "./CreateWorkoutGroupScreen";
 import { ImageOrVideo } from "react-native-image-crop-picker";
 import { MediaSlider } from "../../../app_components/MediaSlider/MediaSlider";
 import { WorkoutCardProps, WorkoutGroupProps, WorkoutItemProps } from "../../../app_components/Cards/types";
-import { displayJList, ItemString, jList, nanOrNah, numberInputStyle, numFilter, numFilterWithSpaces, verifyWorkoutItem } from "./CreateWorkoutScreen";
+import { ItemString, numberInputStyle, } from "./CreateWorkoutScreen";
 import DatePicker from "react-native-date-picker";
 import { ActionCancelModal } from "../../Profile";
 import { dateFormat } from "../../StatsScreen";
@@ -69,7 +69,6 @@ const EditWorkoutItem: FunctionComponent<{
 
     // Prevents text field from disappearing when user removes all text from item
     const [hasReps, _hasReps] = useState(JSON.parse(reps)[0] != 0)
-    const [hasWeights, _hasWeights] = useState(JSON.parse(weights).length != 0)
     const [hasDuration, _hasDuration] = useState(JSON.parse(duration)[0] != 0)
     const [hasDistance, _hasDistance] = useState(JSON.parse(distance)[0] != 0)
 
@@ -207,42 +206,42 @@ const EditWorkoutItem: FunctionComponent<{
 
             }
             {
-                hasWeights ?
-                    <Input
-                        inputStyles={{ textAlign: 'center' }}
-                        containerStyle={[[numberInputStyle.containerStyle, { borderRadius: 4, backgroundColor: theme.palette.lightGray }], { width: '100%' }]}
-                        onChangeText={(t) => {
-                            let val = "";
-                            if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
-                                WORKOUT_TYPES[props.schemeType] == REPS_W ||
-                                WORKOUT_TYPES[props.schemeType] == ROUNDS_W
-                            ) {
-                                val = numFilterWithSpaces(t)
-                            } else {
-                                val = numFilter(t)
-                            }
 
-                            const { success, errorType, errorMsg } = props.editItem(
-                                props.workoutIdx,
-                                props.itemIdx,
-                                'weights',
-                                val
-                            )
+                <Input
+                    inputStyles={{ textAlign: 'center' }}
+                    containerStyle={[[numberInputStyle.containerStyle, { borderRadius: 4, backgroundColor: theme.palette.lightGray }], { width: '100%' }]}
+                    onChangeText={(t) => {
+                        let val = "";
+                        if (WORKOUT_TYPES[props.schemeType] == STANDARD_W ||
+                            WORKOUT_TYPES[props.schemeType] == REPS_W ||
+                            WORKOUT_TYPES[props.schemeType] == ROUNDS_W
+                        ) {
+                            val = numFilterWithSpaces(t)
+                        } else {
+                            val = numFilter(t)
+                        }
 
-                            if (!success) {
-                                setWeightsError(errorMsg)
-                            } else {
-                                setWeightsError('')
-                            }
+                        const { success, errorType, errorMsg } = props.editItem(
+                            props.workoutIdx,
+                            props.itemIdx,
+                            'weights',
+                            val
+                        )
 
-                            setNewWeights(val)
-                        }}
-                        isError={weightsError.length > 0}
-                        helperText={weightsError}
-                        value={newWeights}
-                        label="Weight(s)"
-                    />
-                    : <></>
+                        if (!success) {
+                            setWeightsError(errorMsg)
+                        } else {
+                            setWeightsError('')
+                        }
+
+                        setNewWeights(val)
+                    }}
+                    isError={weightsError.length > 0}
+                    helperText={weightsError}
+                    value={newWeights}
+                    label="Weight(s)"
+                />
+
 
             }
 
@@ -359,6 +358,7 @@ const CreateCompletedWorkoutScreen: FunctionComponent<Props> = ({ navigation, ro
         }
 
         const res = await createCompletedWorkout(data).unwrap()
+        console.log("CompltedWG formdata: ", data)
         console.log("CompltedWG res: ", res)
         if (res.id) {
             navigation.goBack()

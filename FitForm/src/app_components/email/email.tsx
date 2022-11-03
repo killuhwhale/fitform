@@ -27,7 +27,7 @@ export const ResetPassword: FunctionComponent = () => {
             'email': email,
         }
 
-        const url = `${BASEURL}resetPassword/send_reset_code/`
+        const url = `${BASEURL}user/send_reset_code/`
         const result = await post(url, emailData)
         console.log("Send email res:", result, await result.formData())
         setShowHint(true)
