@@ -116,7 +116,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
     } else if (owned_by_class) {
         // we have OG workout owneed by class
         const { data, isLoading, isSuccess, isError, error } = useGetWorkoutsForGymClassWorkoutGroupQuery(id);
-        // console.log("Owned by class, data: ", data)
+        console.log("Owned by class, data: ", data)
         oGData = data
         oGIsLoading = isLoading
         oGIsSuccess = isSuccess
@@ -132,7 +132,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
             error: errorCompleted,
         } = useGetCompletedWorkoutByWorkoutIDQuery(id);
 
-        // console.log("Completed data: ", dataCompleted)
+        console.log("Completed data: ", dataCompleted)
 
         if (dataCompleted && dataCompleted.completed_workouts.length > 0) {
             completedData = dataCompleted
@@ -301,7 +301,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
 
                     <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end', flexDirection: 'row', paddingLeft: 12 }}>
                         {
-                            showingOGWorkoutGroup && !oGIsLoading && !(userData && userData.id == oGData.owner_id) ?
+                            showingOGWorkoutGroup && !oGIsLoading && !(userData && userData.id == oGData.owner_id && !owned_by_class) ?
                                 <IconButton
                                     style={{ height: 24, }}
                                     icon={
@@ -312,8 +312,8 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
                                             }
                                             style={{ fontSize: 24 }}
                                         />
-                                    }
-                                    onPress={completedIsSuccess || (userData && userData.id == oGData.owner_id) ? () => { } : navigateToCompletedWorkoutGroupScreen}
+                                    } 
+                                    onPress={completedIsSuccess || (userData && userData.id == oGData.owner_id && !owned_by_class) ? () => { } : navigateToCompletedWorkoutGroupScreen}
                                 />
                                 :
                                 <></>

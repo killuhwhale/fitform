@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import React, { FunctionComponent, ReactNode, useEffect, useState, type PropsWithChildren } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import HomePage from './src/app_pages/Home';
+import HomePage from './src/app_pages/home';
 import RootStack from './src/navigators/RootStack'
 import { DefaultTheme, ThemeProvider, useTheme } from "styled-components/native";
 import {
@@ -18,11 +18,12 @@ import { store } from "./src/redux/store"
 import { Provider } from 'react-redux'
 import { navigationRef } from './src/navigators/RootNavigation';
 import Header from "./src/app_components/Header/header";
-import { getToken, useGetUserInfoQuery } from "./src/redux/api/apiSlice";
+import { apiSlice, getToken, useGetUserInfoQuery } from "./src/redux/api/apiSlice";
 import AuthManager from "./src/utils/auth";
 import AuthScreen from './src/app_pages/AuthScreen';
 import Uploady from "@rpldy/native-uploady";
 import { BASEURL } from './src/utils/constants';
+import { useAppDispatch } from './src/redux/hooks';
 
 
 
@@ -144,49 +145,39 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
   // This will check if we have a valid token by sending a request to server for user info.
   // This either loads the app or login page.
   const { data, isLoading, isSuccess, isError, error } = useGetUserInfoQuery("");
-
   const [loggedIn, setLoggedIn] = useState(false);
-  const [needToRefreshToken, setNeedToRefreshToken] = useState(false);
 
 
-  if ((data?.email?.length > 0 || data?.username?.length > 0) && !loggedIn) {
+  if ((data?.email?.length > 0 || data?.username?.length > 0) && !loggedIn && !isError && !isLoading && isSuccess) {
     setLoggedIn(true)
   }
 
 
-  console.log("Auth: ", loggedIn, isLoading, data, isError)
-
   auth.listenLogout(() => {
     console.log("Listened for logout")
+    
     setLoggedIn(false);
   });
 
   auth.listenLogin(() => {
     console.log("Listne for login")
-    setLoggedIn(true);
+    console.log("Should log in")
+    console.log(isError)
+    setLoggedIn(true); 
   });
 
-  if (!loggedIn && (data?.id ?? false) && (data?.email ?? false)) {
-    setLoggedIn(true)
-  }
 
-  let showError = false;
-
-  if (!data) {
-    showError = true;
-  }
-
+  console.log("Auth: ", "logged iN:", loggedIn,"isLoading:", isLoading, "Data:", data, "isError:",isError)
+  console.log("Err: ", error)
   return (
     <>
       {
         isLoading ?
           <RegularText>Loading...</RegularText>
-          : isSuccess ?
+          : isSuccess || (loggedIn && isError) ?
             <>
               {
-                showError ?
-                  <RegularText>Error</RegularText>
-                  : loggedIn ?
+               loggedIn ?
                     <>
                       {props.children[0]}
                     </>
@@ -199,7 +190,9 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
             </>
 
             : isError ?
-              <RegularText>Show Login...</RegularText>
+            <>
+            {props.children[1]}
+          </>
               : <></>
       }
     </>
@@ -214,6 +207,8 @@ const App = () => {
     <Provider store={store}>
       <ThemeProvider theme={isDarkMode ? LightTheme : DarkTheme}>
         <Uploady destination={{ url: `${BASEURL}` }}>
+          <React.StrictMode>
+
           <SafeAreaView>
             <StatusBar barStyle={isDarkMode ? 'dark-content' : 'light-content'} />
             <Header />
@@ -223,6 +218,7 @@ const App = () => {
             <RootStack navref={navigationRef} />
             <AuthScreen />
           </Auth>
+          </React.StrictMode>
         </Uploady>
       </ThemeProvider>
     </Provider>

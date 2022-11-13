@@ -53,6 +53,7 @@ const HomePage: FunctionComponent<Props> = ({ navigation }) => {
                 <Input
                     onChangeText={filterText}
                     value={term}
+                    fontSize={16}
                     containerStyle={{
                         width: '100%',
                         backgroundColor: theme.palette.lightGray,
@@ -60,7 +61,7 @@ const HomePage: FunctionComponent<Props> = ({ navigation }) => {
                         paddingHorizontal: 8,
                     }}
                     leading={
-                        <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                        <Icon name="search"  android="md-add" style={{ fontSize: 16 }} color={theme.palette.text} />
                     }
                     label=""
                     placeholder="Search gyms"

@@ -1,6 +1,7 @@
 Superuser: admin / mostdope
 
 psql -U gym_admin instafit_master
+sudo -u postgres psql -U gym_admin -d instafit_master -h 127.0.0.1
 
 
 AttributeError: Manager isn't available; 'auth.User' has been swapped for 'users.User'

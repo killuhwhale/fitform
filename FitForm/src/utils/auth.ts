@@ -1,9 +1,9 @@
 // Manage state of current user
 
 import { BASEURL } from "./constants";
-import { get, post } from "./fetchAPI"
-import { storeToken, getToken, clearToken } from "../redux/api/apiSlice"
-
+import { post } from "./fetchAPI"
+import { storeToken, getToken, clearToken, apiSlice } from "../redux/api/apiSlice"
+import { useAppSelector, useAppDispatch } from '../redux/hooks'
 // The interface for the functions to be given, take no arguments and returns nothing
 interface OnLogoutProps {
     (): void;
@@ -21,6 +21,9 @@ class AuthManager {
         this.onLogout = [];
         this.onLogin = [];
     }
+
+
+
 
     listenLogout(fn: OnLogoutProps) {
         this.onLogout.push(fn);
@@ -46,6 +49,7 @@ class AuthManager {
     async logout() {
         console.log("Loggin out")
         if (await clearToken()) {
+          
             this.onLogout.forEach(fn => fn());
         }
     }

@@ -17,6 +17,9 @@ env /usr/bin/arch -arm64 /bin/bash --login
 npx react-native start     
 npx react-native run-ios
 
+// When building your android app locally, by default you build all the 4 Application 
+//    Binary Interfaces (ABIs) : armeabi-v7a, arm64-v8a, x86 & x86_64.
+npx react-native run-android --active-arch-only
 npx react-native run-ios --udid CCF49CB5-3952-4D51-8830-27A2BA1FEB1B
 
 import { GymCardProps } from "../app_components/Cards/types"
@@ -30,13 +33,45 @@ TODOs
 
     HUGE:  
 
-    Add an Absolute View to GymScreen and GymClassScreen
-        - a little colored banner at top right to indicate gmy or class view
+    -  Create Script to create WorkoutNames
+        - Python to generate script
+            - can be run against dev environment to hit endpoint which will also upload the media to DO Spaces
+
+    Finish Workout,
+        - User should be able to change the units used....
+
+
+
+
+    Android:
+        - WorkoutCard -> WorkoutItem
+            - When clicking the icon for the workoutitem, the workoutname detail page isnt shown...
+        - GymClassScreen Coaches and Member modals are messed up visually
+
+
+    Android UI Adjustments
+        - Pickers - weird looking
+            - Datepicker looks fine.
+            - Picker in Create GymClass - select gym
+                - cannot tell a picker is there, text should appear.
+        - 
+
+        - Create gym class
+            - Switch and its label are not aligned
+
+        - Profile Settings Modal
+        - 
 
     Delete UI:
         - Make User enter the name of the Gym/ GymClass/ Workout before deleting.
             - it will delete a lot of data. so we should make really sure.
     
+
+    Android Upload Media
+        - Backend complains of a string has no name
+            - file.name.split(".")
+            - on Android the file isnt represent as object??
+
     
     Profile Settings Page
         - onConfirm Logout modal

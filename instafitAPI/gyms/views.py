@@ -86,13 +86,15 @@ def is_gym_owner(user, gym_id):
 def upload_media(files, parent_id, file_kind, start_id=0):
     names = []
     last_idx = start_id
+    print("Fiels", files)
     for file in files:
-        ext = file.name.split(".")[-1]
-        tmp_name = f"{last_idx}.{ext}"
-        if s3_client.upload(file, file_kind, parent_id, tmp_name):
-            # If successful upload, inc index for file
-            last_idx += 1
-            names.append(tmp_name)
+        if not type(file) == type(""):
+            ext = file.name.split(".")[-1]
+            tmp_name = f"{last_idx}.{ext}"
+            if s3_client.upload(file, file_kind, parent_id, tmp_name):
+                # If successful upload, inc index for file
+                last_idx += 1
+                names.append(tmp_name)
     return names
 
 
@@ -645,31 +647,42 @@ class WorkoutGroupsViewSet(viewsets.ModelViewSet, WorkoutGroupsPermission):
     # User will interat with Group workout and can add multiple workouts to it.
 
     def create(self, request):
-        # try:
-        data = {**request.data.dict()}
-        files = request.data.getlist("files", [])
-        if 'files' in data:
-            del data['files']
+        try:
+            data = {**request.data.dict()}
+            files = request.data.getlist("files", [])
+            if 'files' in data:
+                del data['files']
 
-        # Models expects True/ False, coming from json, we get true/ false. Instead we store 0,1 and convert
-        data['owned_by_class'] = jbool(data['owned_by_class'])
-        if not data['owned_by_class']:
-            data['owner_id'] = request.user.id
+            # Models expects True/ False, coming from json, we get true/ false. Instead we store 0,1 and convert
+            data['owned_by_class'] = jbool(data['owned_by_class'])
+            if not data['owned_by_class']:
+                data['owner_id'] = request.user.id
 
-        workout_group, newly_created = WorkoutGroups.objects.get_or_create(
-            **{**data, 'media_ids': []})
-        if not newly_created:
-            return Response(to_err("Workout already create. Must delete and reupload w/ media or edit workout.", ))
+            workout_group, newly_created = WorkoutGroups.objects.get_or_create(
+                **{**data, 'media_ids': []})
+            if not newly_created:
+                return Response(to_err("Workout already created. Must delete and reupload w/ media or edit workout.", ))
+        except Exception as e:
+            print("Error creating workout group:", e)
+            return Response(to_err("Error creating workout group:" ))
 
-        parent_id = workout_group.id
-        uploaded_names = upload_media(
-            files, parent_id, FILES_KINDS[WORKOUT_FILES])
-        workout_group.media_ids = json.dumps([n for n in uploaded_names])
-        workout_group.save()
-        return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
-        # except Exception as e:
-        #     print(e)
-        #     return Response("Failed to create workout")
+        try:
+            parent_id = workout_group.id
+            print("Uploading workout files...", files)
+            uploaded_names = upload_media(
+                files, parent_id, FILES_KINDS[WORKOUT_FILES])
+
+            if not len(files) == len(uploaded_names):
+                workout_group.delete()
+                return Response(to_err("Media not uploaded."))
+
+            workout_group.media_ids = json.dumps([n for n in uploaded_names])
+            workout_group.save()
+            return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
+        except Exception as e:
+            workout_group.delete()
+            print("Error Uploading media for workoutgroup ", e)
+            return Response(to_err("Failed to create workout"))
 
     def last_id_from_media(self, cur_media_ids: List[str]) -> int:
         last_id = 0
@@ -819,6 +832,7 @@ class WorkoutGroupsViewSet(viewsets.ModelViewSet, WorkoutGroupsPermission):
             workout_group.save()
             return Response(to_data("Finished workout requested to delete, archived instead."))
         workout_group.delete()
+        workout_group.save()
         return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
 
 
@@ -919,8 +933,15 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
     permission_classes = []
 
     def create(self, request):
-        # try:
-
+        ''' Create a completed workout group w/ media, workouts and workout items.
+            1. CreateCWG
+            2. Upload Media
+            3. Create Cwrokouts w/ their CompleteItems
+            
+            if step 2 fails, media is not uploaded successfully,
+                - delete CWG and return
+        '''
+        comp_workout_group = None
         data = {**request.data.dict()}
         files = request.data.getlist("files", [])
         workout_group_id = data['workout_group']
@@ -933,70 +954,95 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
             del data['workouts']
         if 'workout_group' in data:
             del data['workout_group']
+        
+        try:
+            workout_group = WorkoutGroups.objects.get(id=workout_group_id)
+            if not workout_group.finished:
+                return Response(to_err("Cannot create completedWorkoutGroup for a non finished WorkoutGroup"))
 
-        workout_group = WorkoutGroups.objects.get(id=workout_group_id)
-        if not workout_group.finished:
-            return Response(to_err("Cannot create completedWorkoutGroup for a non finished WorkoutGroup"))
+            comp_workout_group, newly_created = CompletedWorkoutGroups.objects.get_or_create(
+                **{**data, 'caption': caption, 'media_ids': [], 'workout_group_id': workout_group_id, 'user_id': request.user.id})
+            if not newly_created:    
+                return Response(to_err("Workout already create. Must delete and reupload w/ media or edit workout."))
 
-        comp_workout_group, newly_created = CompletedWorkoutGroups.objects.get_or_create(
-            **{**data, 'caption': caption, 'media_ids': [], 'workout_group_id': workout_group_id, 'user_id': request.user.id})
-        # if not newly_created:
-        #     return Response("Workout already create. Must delete and reupload w/ media or edit workout.")
+        except Exception as e:
+            print("Error creating CompletedWorkoutGroup:", e)
+            if comp_workout_group:
+                comp_workout_group.delete()
+        
+        uploaded_names = []
+        try:
+            parent_id = comp_workout_group.id
+            print("Uploading files for completedWorkoutGroup: ", files, "\n")
+            uploaded_names = upload_media(
+                files, parent_id, FILES_KINDS[COMP_WORKOUT_FILES])
+            
+            # If given files to do match uploaded files, consider bad upload, delete created stuff and return error
+            # if len(files) != len(uploaded_names):
+            #     comp_workout_group.delete() #
+            #     delete_media(parent_id, uploaded_names, FILES_KINDS[COMP_WORKOUT_FILES]) # undo step two 
+            #     return Response(to_err("Failed to upload media files."))
 
-        parent_id = comp_workout_group.id
-        uploaded_names = upload_media(
-            files, parent_id, FILES_KINDS[COMP_WORKOUT_FILES])
-        comp_workout_group.media_ids = json.dumps([n for n in uploaded_names])
-        comp_workout_group.save()
+            comp_workout_group.media_ids = json.dumps([n for n in uploaded_names])
+            comp_workout_group.save()
 
-        # from gyms.models import *
-        # CompletedWorkoutGroups.objects.all().delete()
-        allItems = []
-        for w in workouts:
-            workout_items = w['workout_items']
-            workout_id = w['id']
-            del w['id']
-            del w['workout_items']
-            del w['date']
+        except Exception as e:
+            comp_workout_group.delete() # undo step one
+            delete_media(parent_id, uploaded_names, FILES_KINDS[COMP_WORKOUT_FILES]) # undo step two 
+            print("Error uploading media:", e)
+            return Response(to_err("Error uploading media"))
 
-            completed_workout, newly_created = CompletedWorkouts.objects.get_or_create(**{
-                **w,
-                'user_id': request.user.id,
-                'completed_workout_group_id': parent_id,
-                'workout_id': workout_id
-            })
+        try:
+            allItems = []
+            for w in workouts:
+                _w = {**w}
+                print("Workout to add as completed", w)
+                workout_items = _w['workout_items']
+                workout_id = _w['id']
+                del _w['id']
+                del _w['workout_items']
+                del _w['date']
+                del _w['group']
 
-            for item in workout_items:
-                _item = {**item}
-                name = _item['name']
-                del _item['date']
-                del _item['name']
-                del _item['id']
-                del _item['workout']
-                _item['user_id'] = request.user.id
-                _item['completed_workout'] = completed_workout.id
+                completed_workout, newly_created = CompletedWorkouts.objects.get_or_create(**{
+                    **_w,
+                    'user_id': request.user.id,
+                    'completed_workout_group_id': parent_id,
+                    'workout_id': workout_id
+                })
 
-                allItems.append(
-                    CompletedWorkoutItems(
-                        **{
-                            **_item,
-                            "completed_workout": CompletedWorkouts(id=completed_workout.id),
-                            "name": WorkoutNames(id=name['id']),
-                            'user_id': request.user.id
-                        }
+                for item in workout_items:
+                    _item = {**item}
+                    name = _item['name']
+                    del _item['date']
+                    del _item['name']
+                    del _item['id']
+                    del _item['workout']
+                    _item['user_id'] = request.user.id
+                    _item['completed_workout'] = completed_workout.id
+
+                    allItems.append(
+                        CompletedWorkoutItems(
+                            **{
+                                **_item,
+                                "completed_workout": CompletedWorkouts(id=completed_workout.id),
+                                "name": WorkoutNames(id=name['id']),
+                                'user_id': request.user.id
+                            }
+                        )
                     )
-                )
 
-        CompletedWorkoutItems.objects.bulk_create(allItems)
+            CompletedWorkoutItems.objects.bulk_create(allItems)
 
-        # Get Workouts and Create Completed version
-        # completed_workout_group
-        # workout
+        except Exception as e:
+            comp_workout_group.delete() # undo step one, should delete all foregin keys
+            delete_media(parent_id, uploaded_names, FILES_KINDS[COMP_WORKOUT_FILES]) # undo step two 
+            msg = "Error creating CompleteWorkoutItems"
+            print(msg, e)
+            return Response(to_err(msg))
 
         return Response(CompletedWorkoutGroupsSerializer(comp_workout_group).data)
-        # except Exception as e:
-        #     print(e)
-        #     return Response("Failed to create workout")
+        
 
     def last_id_from_media(self, cur_media_ids: List[str]) -> int:
         last_id = 0

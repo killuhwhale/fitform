@@ -144,9 +144,11 @@ const ManageMembersModal: FunctionComponent<{
                                                 backgroundColor: theme.palette.lightGray,
                                                 borderRadius: 8,
                                                 paddingHorizontal: 8,
+                                                
                                             }}
+                                        fontSize={16}
                                             leading={
-                                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                                                <Icon name="search" style={{ fontSize: 16 }} color={theme.palette.text} />
                                             }
                                             label=""
                                             placeholder="Search users"
@@ -697,8 +699,9 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
                                 borderRadius: 8,
                                 paddingHorizontal: 8,
                             }}
+                            fontSize={16}
                             leading={
-                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                                <Icon name="search" style={{ fontSize: 16 }} color={theme.palette.text} />
                             }
                             label=""
                             placeholder="Search workouts"

@@ -181,7 +181,7 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
                 </View>
             </View> */}
 
-            <View style={{ flex: 2 }}>
+            <View style={{ flex: 2, marginTop: 16, marginBottom: 8 }}>
                 <GymInfoBG source={{ uri: mainURL }}>
                     {/* <RegularText textStyles={{ paddingRight: 12 }}>{title}</RegularText> */}
                     <Row style={{ flex: 1, justifyContent: "flex-end", alignItems: "flex-end" }}>
@@ -196,13 +196,12 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
 
                     </Row>
                 </GymInfoBG>
-
-
-
             </View>
+
+            
             <View style={{ flex: 5 }}>
                 <Row style={{ color: "black" }}>
-                    <View style={{ height: 40, marginTop: 16 }}>
+                    <View style={{ height: 40, marginVertical: 16, width: '100%', justifyContent: 'center' }}>
                         <Input
                             onChangeText={filterText}
                             value={term}
@@ -212,8 +211,9 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
                                 borderRadius: 8,
                                 paddingHorizontal: 8,
                             }}
+                            fontSize={16}
                             leading={
-                                <Icon name="search" style={{ fontSize: 24 }} color={theme.palette.text} />
+                                <Icon name="search" style={{ fontSize: 16 }} color={theme.palette.text} />
                             }
                             label=""
                             placeholder="Search classes"

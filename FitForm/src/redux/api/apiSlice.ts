@@ -101,7 +101,7 @@ const asyncBaseQuery = ({ baseUrl }: { baseUrl: string } = { baseUrl: '' }):
                 console.log("ApiSlice")
                 console.log("ApiSlice")
                 console.log("Data: ", data)
-                console.log("url/ method: ", url, method)
+                console.log("url/ method: ",baseUrl, url, method)
 
 
 
@@ -350,6 +350,7 @@ export const apiSlice = createApi({
             query: (data) => {
 
                 const mapData = new Map<string, string>(data._parts)
+                console.log("Delete workoutGroup mutation! URL: ",`workoutGroups/${mapData.get('id')}/`)
                 return { url: `workoutGroups/${mapData.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
             },
             invalidatesTags: (result, err, arg) => {
@@ -497,7 +498,8 @@ export const apiSlice = createApi({
         }),
 
         getUserInfo: builder.query({
-            query: (id) => { return { url: `users/user_info/`, } }
+            query: (id) => { return { url: `users/user_info/`, } },
+            providesTags: ["User"],
         }),
 
 

@@ -3,7 +3,7 @@ import { NavigationContainer, NavigationContainerRefWithCurrent } from '@react-n
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import HomePage from "../app_pages/Home";
+import HomePage from "../app_pages/home";
 import GymScreen from "../app_pages/GymScreen";
 import GymClassScreen from "../app_pages/GymClassScreen";
 import WorkoutScreen from "../app_pages/WorkoutScreen";

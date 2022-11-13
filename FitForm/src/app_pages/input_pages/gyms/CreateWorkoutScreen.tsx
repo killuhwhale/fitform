@@ -864,12 +864,13 @@ const ItemPanel: FunctionComponent<{ item: WorkoutItemProps; schemeType: number;
             </View>
             <View style={{ flex: 4, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
                 <TouchableHighlight
-                    onPress={navToWorkoutNameDetail}
+                    onPress={() => navToWorkoutNameDetail()}
                     style={{ width: '100%', }}
                     underlayColor={theme.palette.transparent} activeOpacity={0.9}
                 >
                     <View style={{ width: '100%', }}>
                         <Icon name="menu"
+                            onPress={navToWorkoutNameDetail}
                             color={
 
                                 schemeType == 0 && item.ssid >= 0 ?
@@ -1329,6 +1330,6 @@ const CreateWorkoutScreen: FunctionComponent<Props> = ({
 
 export default CreateWorkoutScreen;
 export {
-    ItemString, ItemPanel, numberInputStyle, Input,
+    ItemString, ItemPanel, numberInputStyle, Input, verifyWorkoutItem
 }
 

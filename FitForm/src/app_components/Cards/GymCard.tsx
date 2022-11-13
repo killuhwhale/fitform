@@ -8,7 +8,7 @@ import darkBackground from "./../../../assets/bgs/dark_bg.png"
 import mockLogo from "./../../../assets/bgs/mock_logo.png"
 import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Props as HomeScreenProps } from "../../app_pages/Home";
+import { Props as HomeScreenProps } from "../../app_pages/home";
 
 
 const GymCardBG = styled.ImageBackground`

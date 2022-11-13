@@ -1,40 +1,36 @@
 import React, { FunctionComponent, useState, useContext, useCallback } from "react";
+import { useTheme } from 'styled-components'
 import styled from "styled-components/native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Image, Modal, StyleSheet, View } from "react-native";
-import { Container, displayJList, DURATION_W, numFilter, numFilterWithSpaces, REPS_W, ROUNDS_W, SCREEN_HEIGHT, SCREEN_WIDTH, STANDARD_W, WORKOUT_TYPES } from "../../../app_components/shared";
-import { SmallText, RegularText, LargeText, TitleText } from '../../../app_components/Text/Text'
+import { Container, displayJList, DURATION_W, jList, numFilter, numFilterWithSpaces, REPS_W, ROUNDS_W, SCREEN_HEIGHT, SCREEN_WIDTH, STANDARD_W, WORKOUT_TYPES } from "../../../app_components/shared";
 import { AppBar, Button, IconButton, TextInput } from "@react-native-material/core";
 import Icon from 'react-native-vector-icons/Ionicons';
-import { launchCamera, launchImageLibrary, ImagePickerResponse, Asset } from 'react-native-image-picker';
 
-import DocumentPicker from "react-native-document-picker";
+import { StackScreenProps } from "@react-navigation/stack";
+import DatePicker from "react-native-date-picker";
+import { ImageOrVideo } from "react-native-image-crop-picker";
 
-import { useTheme } from 'styled-components'
+import { SmallText, RegularText, LargeText, TitleText } from '../../../app_components/Text/Text'
 import { useAppSelector, useAppDispatch } from '../../../redux/hooks'
 import { useCreateCompletedWorkoutMutation, useCreateGymMutation } from "../../../redux/api/apiSlice";
 
 import { RootStackParamList } from "../../../navigators/RootStack";
-import { StackScreenProps } from "@react-navigation/stack";
-import AuthManager from "../../../utils/auth";
-import { BASEURL } from "../../../utils/constants";
 import { MediaPicker } from "./CreateWorkoutGroupScreen";
-import { ImageOrVideo } from "react-native-image-crop-picker";
 import { MediaSlider } from "../../../app_components/MediaSlider/MediaSlider";
 import { WorkoutCardProps, WorkoutGroupProps, WorkoutItemProps } from "../../../app_components/Cards/types";
-import { ItemString, numberInputStyle, } from "./CreateWorkoutScreen";
-import DatePicker from "react-native-date-picker";
+import { ItemString, numberInputStyle, verifyWorkoutItem, } from "./CreateWorkoutScreen";
 import { ActionCancelModal } from "../../Profile";
 import { dateFormat } from "../../StatsScreen";
 export type Props = StackScreenProps<RootStackParamList, "CreateCompletedWorkoutScreen">
 import Input from "../../../app_components/Input/input";
+
+
 const PageContainer = styled(Container)`
     background-color: ${props => props.theme.palette.backgroundColor};
     justify-content: space-between;
     width: 100%;
 `;
-
-
 
 // Convert a JSON stringified list to a space demilimited string
 
@@ -354,7 +350,7 @@ const CreateCompletedWorkoutScreen: FunctionComponent<Props> = ({ navigation, ro
         data.append('workouts', JSON.stringify(editedWorkoutGroup.workouts))
         data.append('workout_group', editedWorkoutGroup.id)
         if (files) {
-            files.forEach((file) => data.append('files', { uri: file.path, name: file.filename, type: file.mime, }))
+            files.forEach((file) => data.append('files', { uri: file.path, name: file.path[-6], type: file.mime, }))
         }
 
         const res = await createCompletedWorkout(data).unwrap()

@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-74!cin1dc)k9(a7pw&6i_kes3pko_3-ohm$67dbdjpverfv0u(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["10.0.2.2", 'localhost', '127.0.0.1']
 
 
 # https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html#settings
@@ -124,6 +124,27 @@ WSGI_APPLICATION = 'instafitAPI.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
+
+'''
+    https://medium.com/coding-blocks/creating-user-database-and-adding-access-on-postgresql-8bfcd2f4a91e
+    sudo -u postgres psql
+    postgres=# create database mydb;
+    postgres=# create user myuser with encrypted password 'mypass';
+    postgres=# grant all privileges on database mydb to myuser;
+
+
+    alter user gym_admin with encrypted password 'mostdope';
+    create user gym_admin with encrypted password 'mostdope';
+    create database instafit_master;
+    grant all privileges on database instafit_master to gym_admin;
+
+
+    ./manage.py makemigrations users
+    ./manage.py makemigrations gyms
+    ./manage.py migrate users
+    ./manage.py migrate gyms
+    ./manage.py migrate
+'''
 
 DATABASES = {
     'default': {

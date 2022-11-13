@@ -124,6 +124,7 @@ const AuthScreen: FunctionComponent = () => {
             const data = new FormData()
             data.append("email", newEmail)
             data.append("password", newPassword)
+            data.append("username", newEmail)
             const res = await registerUser(data).unwrap()
             if (res?.id) {
                 console.log("Created user, refresh auth.", res)
