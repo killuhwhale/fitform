@@ -209,6 +209,10 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
     const [showLineChartDataType, setShowLineChartDataType] = useState(1); // Which data to show in the LineChart [totalReps etc...]
     // Default of 1 is good when we have at least 2 items. but when we have 1 we need it to be 0
 
+    const wrapped = (idx: number) => {
+        setShowLineChartDataType(idx)
+    }
+
     const [showLineChartTagType, setShowLineChartTagType] = useState(tagLabels.length == 1 ? 0 : 1); // Which data to show in the LineChart
     const [showLineChartNameType, setShowLineChartNameType] = useState(nameLabels.length == 1 ? 0 : 1); // Which data to show in the LineChart
 
@@ -313,6 +317,7 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
                                         />
 
                                         <HorizontalPicker
+                                            key="barChartKey"
                                             data={dataTypes}
                                             onChange={setShowBarChartDataType}
                                         />
@@ -372,6 +377,7 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
                                                     setShowLineChartNameType(nameLabels.length == 1 ? 0 : 1)
                                                 }} />
                                             <HorizontalPicker
+                                                key={`LineChart`}
                                                 data={dataTypeYAxisSuffix}
                                                 onChange={setShowLineChartDataType}
                                             />

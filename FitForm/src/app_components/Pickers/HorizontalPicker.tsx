@@ -7,6 +7,7 @@ import Animated, {
     useAnimatedGestureHandler,
     useAnimatedStyle,
     withSpring,
+    runOnJS,
 } from "react-native-reanimated";
 
 import { SCREEN_WIDTH } from "../shared";
@@ -38,6 +39,15 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
     const sharedWordSkew = useSharedValue(wordSkew)
     // iF data cotnains only 1 item, fix it in the middle, dont allow user to change
  
+
+    const safeCallOnChange = (idx: number) => {
+        props.onChange(idx)
+    }
+
+    const safeXUpdate = (moveTo: number) => {
+        setXState(moveTo)
+    }
+
     const eventHandler = useAnimatedGestureHandler({
         onStart: (event, ctx) => {
             console.log("On start event: ", event.x, event.y)
@@ -67,10 +77,12 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
                     const moveTo = (singeItemArrayIndex * -sharedItemWidth.value) + sharedItemWidth.value;
                     sharedWordSkew.value = 0
                     transX.value = sharedItemWidth.value 
+                    runOnJS(safeXUpdate)(moveTo)
                     // setXState(moveTo)
                     sharedStartPos.value = sharedItemWidth.value
                     // setStartPos(moveTo)
                     // props.onChange(0)
+                    runOnJS(safeCallOnChange)(0) 
                     console.log("Moving a single item array", data, _data, `Move to ${moveTo}`)
                     return
                 }
@@ -82,6 +94,7 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
                 sharedWordSkew.value = 0
                 transX.value = moveTo
                 // setXState(moveTo)
+                runOnJS(safeXUpdate)(moveTo)
                 sharedStartPos.value = moveTo
                 // setStartPos(moveTo)
                 
@@ -92,11 +105,11 @@ const HorizontalPicker: FunctionComponent<{ data: string[], onChange(idx: number
                 
                 // Send new selected item
                 if (sharedPrevIdx.value != sharedCurIdx.value) {
-                    // console.log("onchange inside: ", props.onChange)
-                    // props.onChange(newIdx)
+                    console.log("onchange inside: ", newIdx)
+                    runOnJS(safeCallOnChange)(newIdx) 
                 }
                 
-                console.log("1")
+                
             }catch(err){
                 console.log("onActive Error: ", err)
             }
