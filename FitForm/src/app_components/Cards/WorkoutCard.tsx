@@ -46,7 +46,6 @@ const WorkoutCard: FunctionComponent<WorkoutCardProps> = (props) => {
         Math.ceil((items.length) / itemsPerCol)
     );
     const navToWorkoutDetail = () => {
-        console.log("hhjbjhbhjhj")
         navigation.navigate("WorkoutDetailScreen", props)
     }
 

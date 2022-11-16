@@ -5,11 +5,11 @@ const get = (url: string) => {
     return fetch(url).then((res) => res.json());
 };
 
-const post = async (url: string, data: object) => {
+const post = async (url: string, data: {}) => {
     return fetch(url, {
         method: 'POST',
         headers: {
-            Accept: 'application/json',
+            // Accept: 'application/json',
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)

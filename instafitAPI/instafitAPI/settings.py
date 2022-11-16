@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-74!cin1dc)k9(a7pw&6i_kes3pko_3-ohm$67dbdjpverfv0u(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["10.0.2.2", 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ["10.0.2.2", 'localhost', '127.0.0.1', '192.168.0.159']
 
 
 # https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html#settings

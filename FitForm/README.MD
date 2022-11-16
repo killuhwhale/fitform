@@ -11,15 +11,24 @@ arch -x86_64 pod install
 
 When deleteing build folder or using new simulator, needed to remove DervivedData
 rm -r /Users/chrisandaya/Library/Developer/Xcode/DerivedData     
+cd android/ && ./gradlew clean
 
 env /usr/bin/arch -arm64 /bin/bash --login
 
 npx react-native start     
 npx react-native run-ios
 
+
+
+adb -s 710KPMZ0409387 reverse tcp:8081 tcp:8081
+adb -s 710KPMZ0409387 reverse tcp:8000 tcp:8000
+
+
 // When building your android app locally, by default you build all the 4 Application 
 //    Binary Interfaces (ABIs) : armeabi-v7a, arm64-v8a, x86 & x86_64.
+
 npx react-native run-android --active-arch-only
+
 npx react-native run-ios --udid CCF49CB5-3952-4D51-8830-27A2BA1FEB1B
 
 import { GymCardProps } from "../app_components/Cards/types"
@@ -41,39 +50,32 @@ TODOs
         - User should be able to change the units used....
 
 
-
-
     Android:
-        - WorkoutCard -> WorkoutItem
-            - When clicking the icon for the workoutitem, the workoutname detail page isnt shown...
         - GymClassScreen Coaches and Member modals are messed up visually
 
-
-    Android UI Adjustments
         - Pickers - weird looking
             - Datepicker looks fine.
             - Picker in Create GymClass - select gym
                 - cannot tell a picker is there, text should appear.
-        - 
 
         - Create gym class
             - Switch and its label are not aligned
-
-        - Profile Settings Modal
-        - 
-
+    
+        Android Upload Media
+            - Backend complains of a string has no name
+                - file.name.split(".")
+                - on Android the file isnt represent as object??
+                    - ['�PNG\r\n\x1a\n\x00\x00  ...  x001�X��\x00\x00\x00\x00IEND�B`�'] 
+                - on iOS it is represented as an object....
+        
+    
     Delete UI:
         - Make User enter the name of the Gym/ GymClass/ Workout before deleting.
             - it will delete a lot of data. so we should make really sure.
     
 
-    Android Upload Media
-        - Backend complains of a string has no name
-            - file.name.split(".")
-            - on Android the file isnt represent as object??
-
-    
     Profile Settings Page
+        - Close button top right corner. 
         - onConfirm Logout modal
         - Migrate update password to a modal
 

@@ -119,11 +119,12 @@ const asyncBaseQuery = ({ baseUrl }: { baseUrl: string } = { baseUrl: '' }):
 
 
                 if (data && params?.contentType !== "multipart/form-data") {
+                    console.log("Stringifying body for JSON data")
                     options.body = JSON.stringify(data);
                 } else {
                     options.body = data;
                 }
-
+                console.log("BODY: ", options.body)
                 // We make the first auth request using access token
                 const result = await fetch(baseUrl + url, options)
                 console.log("BaseQuery fetch response: ", result)
@@ -257,7 +258,7 @@ export const apiSlice = createApi({
             invalidatesTags: ['GymFavs'],
         }),
         deleteGym: builder.mutation({
-            query: (id) => ({ url: `gyms/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (id) => ({ url: `gyms/${id}/`, method: 'DELETE', data: {"nonemptystupidandroid": 1}, params: { contentType: "application/json" } }),
             invalidatesTags: ['Gyms', 'GymFavs', 'UserGyms'],
         }),
         getGymDataView: builder.query({
@@ -297,7 +298,7 @@ export const apiSlice = createApi({
             invalidatesTags: ['GymClassFavs'],
         }),
         deleteGymClass: builder.mutation({
-            query: (data) => ({ url: `gymClasses/${data.gymClassID}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (data) => ({ url: `gymClasses/${data.gymClassID}/`, method: 'DELETE', data: {"nonemptystupidandroid": 1}, params: { contentType: "application/json" } }),
             invalidatesTags: (result, err, arg) => [{ type: 'GymClasses', id: arg.gymID }, 'GymClassFavs'], // Currently, favorites are fetched all at once and search in various places.
         }),
 
@@ -351,7 +352,7 @@ export const apiSlice = createApi({
 
                 const mapData = new Map<string, string>(data._parts)
                 console.log("Delete workoutGroup mutation! URL: ",`workoutGroups/${mapData.get('id')}/`)
-                return { url: `workoutGroups/${mapData.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
+                return { url: `workoutGroups/${mapData.get('id')}/`, method: 'DELETE', data, params: { contentType: "multipart/form-data" } } 
             },
             invalidatesTags: (result, err, arg) => {
                 const data = new Map<string, string>(arg._parts)
@@ -374,8 +375,8 @@ export const apiSlice = createApi({
         deleteWorkout: builder.mutation({
             query: (arg) => {
                 const data = new Map<string, string>(arg._parts)
-                console.log("Deleting workout query", data)
-                return { url: `workouts/${data.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
+                console.log("Deleting workout query dsa", data)
+                return { url: `workouts/${data.get('id')}/`, method: 'DELETE', data: {"nonemptystupidandroid": 1}, params: { contentType: "multipart/form-data" } }
             },
             invalidatesTags: (result, error, arg) => {
                 if (error) return []
@@ -450,7 +451,7 @@ export const apiSlice = createApi({
         deleteCompletedWorkoutGroup: builder.mutation({
             query: (data) => {
                 const mappedData = new Map<string, string>(data._parts)
-                return { url: `completedWorkoutGroups/${mappedData.get('id')}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }
+                return { url: `completedWorkoutGroups/${mappedData.get('id')}/`, method: 'DELETE', data: {"nonemptystupidandroid": 1}, params: { contentType: "application/json" } }
 
             },
             invalidatesTags: (result, error, arg) => {
@@ -475,7 +476,7 @@ export const apiSlice = createApi({
 
 
         deleteCompletedWorkout: builder.mutation({
-            query: (id) => ({ url: `completedWorkouts/${id}/`, method: 'DELETE', data: {}, params: { contentType: "application/json" } }),
+            query: (id) => ({ url: `completedWorkouts/${id}/`, method: 'DELETE', data: {"nonemptystupidandroid": 1}, params: { contentType: "application/json" } }),
         }),
 
 

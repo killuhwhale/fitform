@@ -24,6 +24,7 @@ import AuthScreen from './src/app_pages/AuthScreen';
 import Uploady from "@rpldy/native-uploady";
 import { BASEURL } from './src/utils/constants';
 import { useAppDispatch } from './src/redux/hooks';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 
@@ -206,8 +207,10 @@ const App = () => {
   return (
     <Provider store={store}>
       <ThemeProvider theme={isDarkMode ? LightTheme : DarkTheme}>
+
         <Uploady destination={{ url: `${BASEURL}` }}>
           <React.StrictMode>
+      <GestureHandlerRootView style={{flex: 1}}>
 
           <SafeAreaView>
             <StatusBar barStyle={isDarkMode ? 'dark-content' : 'light-content'} />
@@ -218,6 +221,7 @@ const App = () => {
             <RootStack navref={navigationRef} />
             <AuthScreen />
           </Auth>
+      </GestureHandlerRootView>
           </React.StrictMode>
         </Uploady>
       </ThemeProvider>

@@ -827,12 +827,16 @@ class WorkoutGroupsViewSet(viewsets.ModelViewSet, WorkoutGroupsPermission):
         workout_group_id = pk
         workout_group = WorkoutGroups.objects.get(id=workout_group_id)
         if workout_group.finished:
+            print("workout group is finished, archingivng instead of deleting.")
             workout_group.archived = True
             workout_group.date_archived = datetime.now()
             workout_group.save()
             return Response(to_data("Finished workout requested to delete, archived instead."))
+            
+
+        print("workout group is not finished, deleting.")
         workout_group.delete()
-        workout_group.save()
+        # workout_group.save() # This resavess the object and doesnt dlete it.
         return Response(WorkoutGroupsSerializer(workout_group, context={'request': request}).data)
 
 
