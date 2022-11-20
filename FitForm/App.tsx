@@ -203,10 +203,11 @@ const Auth: FunctionComponent<{ children: Array<ReactNode> }> = (props) => {
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
+  console.log("User's preffered color scheme", useColorScheme(), isDarkMode)
   const theme = useTheme();
   return (
     <Provider store={store}>
-      <ThemeProvider theme={isDarkMode ? LightTheme : DarkTheme}>
+      <ThemeProvider theme={isDarkMode ? DarkTheme : LightTheme}>
 
         <Uploady destination={{ url: `${BASEURL}` }}>
           <React.StrictMode>

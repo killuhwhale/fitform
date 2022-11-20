@@ -86,7 +86,7 @@ def is_gym_owner(user, gym_id):
 def upload_media(files, parent_id, file_kind, start_id=0):
     names = []
     last_idx = start_id
-    print("Fiels", files)
+    # print("Fiels", files)
     for file in files:
         if not type(file) == type(""):
             ext = file.name.split(".")[-1]
@@ -1041,7 +1041,7 @@ class CompletedWorkoutGroupsViewSet(DestroyWithPayloadMixin, viewsets.ModelViewS
         except Exception as e:
             comp_workout_group.delete() # undo step one, should delete all foregin keys
             delete_media(parent_id, uploaded_names, FILES_KINDS[COMP_WORKOUT_FILES]) # undo step two 
-            msg = "Error creating CompleteWorkoutItems"
+            msg = f"Error creating CompleteWorkoutItems {e}"
             print(msg, e)
             return Response(to_err(msg))
 

@@ -1,4 +1,4 @@
-import { Dimensions } from "react-native";
+import { Dimensions, Platform } from "react-native";
 import styled from "styled-components/native";
 import { WorkoutStats } from "../app_pages/WorkoutDetailScreen";
 import { SPACES_URL } from "../utils/constants";
@@ -15,6 +15,17 @@ const LB2KG = 0.453592
 
 export const SCREEN_WIDTH = Dimensions.get("screen").width;
 export const SCREEN_HEIGHT = Dimensions.get("screen").height;
+
+
+
+
+
+export const titleFontSize: number = Platform.OS === "ios"? 48: 44;
+export const lgFontSize: number = Platform.OS === "ios"? 36: 32;
+export const regFontSize: number = Platform.OS === "ios"? 24: 20;
+export const mdFontSize: number = Platform.OS === "ios"? 18: 14;
+export const smFontSize: number = Platform.OS === "ios"? 12: 12;
+
 
 export const STANDARD_W = "STANDARD"
 export const REPS_W = "REPS"

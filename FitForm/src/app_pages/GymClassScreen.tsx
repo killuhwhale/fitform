@@ -584,7 +584,7 @@ const GymClassScreen: FunctionComponent<Props> = ({ navigation, route: { params 
 
                     </ScrollView>
                 </View>
-                <View style={{ position: 'absolute', right: SCREEN_WIDTH * .0314 }}>
+                <View style={{ position: 'absolute', right: SCREEN_WIDTH * .0314 +  8, marginLeft: 8 }}>
                     {
                         dataGymClassFavs && !isLoadingGymClassFavs &&
                             isFavorited(dataGymClassFavs?.favorite_gym_classes) ?

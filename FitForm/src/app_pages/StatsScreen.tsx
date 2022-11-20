@@ -227,7 +227,7 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
     return (
         <ScreenContainer>
             {/* Date Picker */}
-            <View style={{ flex: 1, width: '100%' }}>
+            <View style={{ flex: 2, width: '100%', alignItems: 'center', }}>
                 <View style={{
                     flexDirection: 'row',
                     width: '100%',
@@ -266,7 +266,7 @@ const StatsScreen: FunctionComponent<Props> = ({ navigation, route: { params } }
                     />
                 </View>
             </View>
-            <View style={{ flex: 6 }}>
+            <View style={{ flex: 8 }}>
                 <ScrollView>
                     {
                         dataReady ?

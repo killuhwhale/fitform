@@ -351,7 +351,7 @@ const WorkoutScreen: FunctionComponent<Props> = ({ navigation, route: { params }
                     <>
                         {
                             oGData && showingOGWorkoutGroup && oGData.finished === false ?
-                                <View style={{ flex: 1, flexDirection: 'row', marginBottom: 12, justifyContent: 'flex-end', alignContent: 'flex-end', alignItems: 'flex-end', width: '100%' }}>
+                                <View style={{ flex: 2, flexDirection: 'row', marginBottom: 12, justifyContent: 'flex-end', alignContent: 'flex-end', alignItems: 'flex-end', width: '100%' }}>
                                     <View style={{ display: showCreate ? 'flex' : 'none', flexDirection: 'row' }}>
                                         <Button onPress={openCreateWorkoutScreenForStandard.bind(this)} title="Reg" />
                                         <Button onPress={openCreateWorkoutScreenForReps.bind(this)} title="Reps" />

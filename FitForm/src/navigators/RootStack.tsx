@@ -21,6 +21,7 @@ import CreateCompletedWorkoutScreen from "../app_pages/input_pages/gyms/CreateCo
 import StatsScreen from "../app_pages/StatsScreen";
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SmallText } from "../app_components/Text/Text";
+import ResetPasswordScreen from "../app_pages/input_pages/users/ResetPassword";
 // Screens and props each screen expects...
 export type RootStackParamList = {
     HomePage: undefined;
@@ -50,6 +51,7 @@ export type RootStackParamList = {
     };
     HomePageTabs: any;
     StatsScreen: undefined;
+    ResetPasswordScreen: undefined;
 };
 
 
@@ -139,6 +141,7 @@ const RootStack: FunctionComponent<RootstackProps> = (props) => {
             <Stack.Screen name="WorkoutNameDetailScreen" component={WorkoutNameDetailScreen} options={{ headerTitle: "" }} />
             <Stack.Screen name="CreateCompletedWorkoutScreen" component={CreateCompletedWorkoutScreen} options={{ headerTitle: "" }} />
             <Stack.Screen name="StatsScreen" component={StatsScreen} options={{ headerTitle: "" }} />
+            <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} options={{ headerTitle: "" }} />
 
 
         </Stack.Navigator>

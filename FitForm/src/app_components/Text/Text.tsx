@@ -1,35 +1,36 @@
 import React, { FunctionComponent } from "react";
-import { Text } from "react-native";
+import { Platform, Text } from "react-native";
 import styled from "styled-components/native";
+import { lgFontSize, mdFontSize, regFontSize, smFontSize, titleFontSize } from "../shared";
 import { TextProps } from './types'
 
 
 const StyledTitleText = styled.Text`
-    font-size: 48px;
+    font-size: ${titleFontSize}px;
     color: ${props => props.theme.palette.text};
     text-align: left;
 `;
 
 const StyledLargeText = styled.Text`
-    font-size: 36px;
+    font-size: ${lgFontSize}px;
     color: ${props => props.theme.palette.text};
     text-align: left;
 `;
 
 const StyledRegularText = styled.Text`
-    font-size: 24px;
+    font-size: ${regFontSize}px;
     color: ${props => props.theme.palette.text};
     text-align: left;
 `;
 
 const StyledMediumText = styled.Text`
-    font-size: 18px;
+    font-size: ${mdFontSize}px;
     color: ${props => props.theme.palette.text};
     text-align: left;
 `;
 
 const StyledSmallText = styled.Text`
-    font-size: 12px;
+    font-size: ${smFontSize}px;
     color: ${props => props.theme.palette.text};
     text-align: left;
 `;

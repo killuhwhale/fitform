@@ -140,7 +140,7 @@ const GymScreen: FunctionComponent<Props> = ({ navigation, route: { params } }) 
                         </View>
                     </ScrollView>
                 </View>
-                <View style={{ position: 'absolute', right: SCREEN_WIDTH * .0314 }}>
+                <View style={{ position: 'absolute', right: SCREEN_WIDTH * .0314 + 8}}>
 
                     {
                         dataGymFavs && !isLoadingGymFavs &&

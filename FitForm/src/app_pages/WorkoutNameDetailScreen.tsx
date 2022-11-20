@@ -18,6 +18,7 @@ const ScreenContainer = styled(Container)`
     background-color: ${props => props.theme.palette.backgroundColor};
     justify-content: space-between;
     width: 100%;
+    padding: 16px;
 `;
 
 

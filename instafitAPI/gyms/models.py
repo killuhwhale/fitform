@@ -84,7 +84,7 @@ class WorkoutGroups(models.Model):
 
 class Workouts(models.Model):
     group = models.ForeignKey(WorkoutGroups, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=50, null=False, blank=False)
     desc = models.CharField(max_length=250)
     # Schemas: Round, Rep, Weightlifting
     scheme_type = models.IntegerField(default=0)  # 0, 1, 2

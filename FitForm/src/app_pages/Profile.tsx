@@ -325,6 +325,8 @@ const ProfileSettingsModal: FunctionComponent<{
     const theme = useTheme();
     const auth = AuthManager;
 
+    const [showConfirmLogout, setShowConfirmLogout] = useState(false)
+
     const logout = () => {
         console.log("Loggin out")
         auth.logout()
@@ -339,13 +341,16 @@ const ProfileSettingsModal: FunctionComponent<{
         >
             <View style={styles.centeredView}>
                 <View style={{ ...styles.settingsModalView, backgroundColor: theme.palette.darkGray }}>
+                    <ScrollView>
+
+                    
                     <View style={{ flexDirection: "row", alignItems: 'center', marginBottom: 12, flex: 1 }}>
                         <RegularText>Settings</RegularText>
                     </View>
 
 
                     <View style={{ alignItems: 'flex-end', width: "100%", marginBottom: 32 }}>
-                        <IconButton onPress={() => { logout() }} color='red' icon={props => <Icon name="log-out" {...props} />} />
+                        <IconButton onPress={() => { setShowConfirmLogout(true) }} color='red' icon={props => <Icon name="log-out" {...props} />} />
                         <SmallText>Logout</SmallText>
                     </View>
 
@@ -421,15 +426,44 @@ const ProfileSettingsModal: FunctionComponent<{
                                 </MediumText>
                             </View>
                         </TouchableHighlight>
+                        <TouchableHighlight
+                            onPress={() => {
+                                RootNavigation.navigate("ResetPasswordScreen", {});
+                                props.onRequestClose()
+                            }}
+                        >
+                            <View style={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 16,
+                                height: 92,
+                                width: 124,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+
+                            }}>
+                                <MediumText textStyles={{ textAlign: 'center' }}>
+                                    ResetPassword
+                                </MediumText>
+                            </View>
+                        </TouchableHighlight>
 
                     </View>
 
-                    <ResetPasswordOld />
+               
 
 
-                    <View style={{ flexDirection: "row", alignItems: 'center', flex: 2 }}>
+                    <View style={{ flexDirection: "row", alignItems: 'center', flex: 2, width: '100%', justifyContent: 'center' }}>
                         <Button onPress={props.onRequestClose} title='Close' style={{ backgroundColor: theme.palette.lightGray }} />
                     </View>
+                    </ScrollView>
+                    <ActionCancelModal
+                        actionText="Logout"
+                        closeText="Close"
+                        modalText={`Are you sure?`}
+                        onAction={logout}
+                        modalVisible={showConfirmLogout}
+                        onRequestClose={() => setShowConfirmLogout(false)}
+                    />
                 </View>
             </View>
         </Modal>
