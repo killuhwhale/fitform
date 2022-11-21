@@ -32,34 +32,31 @@ import { get, post } from "../utils/fetchAPI"
 
 const LIST_GYMS = "http://localhost:8000/gyms/";
 
-I have a login, and am storing tokens.
-
 TODOs
 
-    Android:
-        - GymClassScreen Coaches and Member modals are messed up visually
+    Deployment:
+        Android
+            - Apply for app store
+            - Signing package
 
-        - Create gym class
-            - Switch and its label are not aligned
+        iOS:
+            - Apply for app store
 
-    Delete UI:
-        - Make User enter the name of the Gym/ GymClass/ Workout before deleting.
-            - it will delete a lot of data. so we should make really sure.
+
+
+    Keyboard pushes weirdly on some views
+        - Create Gym Class
+        - Android -> Pushes other views up
+        - iOS     -> Keyboard possibly hides current view
 
     StatsScreen:
-
         - Hoizontal picker,
             - When toggling back and forth, the picker isn't completely in sync with graph. THe grapgh sometimes doesn't update for a few changes...
                 - Feels suspicious with react...]
-
         - On init visit:
             - Select Kgs and nothing shows
             - Click the toggle button and now data shows....
         - Data show show when switching to KGS without needing to toggle the data first.
-
-
-
-
 
 
 
@@ -132,7 +129,6 @@ TODOs
 
 
         Creating Workout
-
 
 V2 Features:
 Auth: - Edit User info - Change pass - Remove account

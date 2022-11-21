@@ -34,7 +34,8 @@ import {
   WorkoutItemProps,
   WorkoutNameProps,
 } from '../../../app_components/Cards/types';
-import {Input, numberInputStyle, pickerStyle} from './CreateWorkoutScreen';
+import {numberInputStyle, pickerStyle} from './CreateWorkoutScreen';
+import Input from '../../../app_components/Input/input';
 
 interface AddWorkoutItemProps {
   success: boolean;

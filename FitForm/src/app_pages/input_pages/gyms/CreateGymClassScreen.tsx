@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import {Image, Modal, Platform, StyleSheet, View, Switch} from 'react-native';
 import styled from 'styled-components/native';
-import {Container} from '../../../app_components/shared';
+import {Container, mdFontSize} from '../../../app_components/shared';
 import {
   SmallText,
   RegularText,
@@ -16,12 +16,7 @@ import {
 } from '../../../app_components/Text/Text';
 import {Button, TextInput} from '@react-native-material/core';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {
-  launchCamera,
-  launchImageLibrary,
-  ImagePickerResponse,
-  Asset,
-} from 'react-native-image-picker';
+import {launchImageLibrary, Asset} from 'react-native-image-picker';
 import {Picker} from '@react-native-picker/picker';
 import DocumentPicker from 'react-native-document-picker';
 
@@ -34,6 +29,7 @@ import {
 
 import {RootStackParamList} from '../../../navigators/RootStack';
 import {StackScreenProps} from '@react-navigation/stack';
+import Input from '../../../app_components/Input/input';
 export type Props = StackScreenProps<
   RootStackParamList,
   'CreateGymClassScreen'
@@ -44,11 +40,6 @@ const PageContainer = styled(Container)`
   justify-content: space-between;
   width: 100%;
 `;
-const Touchable = styled.TouchableHighlight`
-  height: 100%;
-  border-radius: 25px;
-`;
-
 const ImagePicker: FunctionComponent<{
   setState(file: Asset): void;
   title: string;
@@ -165,33 +156,66 @@ const CreateGymClassScreen: FunctionComponent<Props> = ({navigation}) => {
       <RegularText textStyles={{marginBottom: 8}}>Create Gym Class</RegularText>
       <View style={{height: '100%', width: '100%'}}>
         <View style={{flex: 3}}>
-          <TextInput
-            onChangeText={t => setTitle(t)}
-            label="Title"
-            value={title}
-            // helperText={}
-            leading={props => (
-              <Icon name="checkmark-circle-outline" {...props} />
-            )}
-          />
-          <TextInput
-            label="Description"
-            value={desc}
-            onChangeText={d => setDesc(d)}
-            leading={props => (
-              <Icon name="checkmark-circle-outline" {...props} />
-            )}
-          />
+          <View style={{height: 55, marginBottom: 8}}>
+            <Input
+              onChangeText={t => setTitle(t)}
+              value={title}
+              containerStyle={{
+                width: '100%',
+                backgroundColor: theme.palette.lightGray,
+                borderRadius: 8,
+                paddingHorizontal: 8,
+              }}
+              fontSize={mdFontSize}
+              leading={
+                <Icon
+                  name="checkmark-circle-outline"
+                  style={{fontSize: mdFontSize}}
+                  color={theme.palette.text}
+                />
+              }
+              label=""
+              placeholder="Title"
+            />
+          </View>
+          <View style={{height: 50}}>
+            <Input
+              onChangeText={t => setDesc(t)}
+              value={desc}
+              containerStyle={{
+                width: '100%',
+                backgroundColor: theme.palette.lightGray,
+                borderRadius: 8,
+                paddingHorizontal: 8,
+              }}
+              fontSize={mdFontSize}
+              leading={
+                <Icon
+                  name="checkmark-circle-outline"
+                  style={{fontSize: mdFontSize}}
+                  color={theme.palette.text}
+                />
+              }
+              label=""
+              placeholder="Description"
+            />
+          </View>
         </View>
-        <View style={{flex: 1}}>
-          <Switch
-            trackColor={{false: '#767577', true: '#81b0ff'}}
-            thumbColor={isPrivate ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={setIsPrivate}
-            value={isPrivate}
-          />
-          <SmallText>Private class</SmallText>
+        <View style={{flex: 1, justifyContent: 'flex-end', width: '100%'}}>
+          <View>
+            <Switch
+              trackColor={{false: '#767577', true: '#81b0ff'}}
+              thumbColor={isPrivate ? '#f5dd4b' : '#f4f3f4'}
+              ios_backgroundColor="#3e3e3e"
+              onValueChange={setIsPrivate}
+              value={isPrivate}
+            />
+          </View>
+          <View>
+            <SmallText textStyles={{textAlign: 'right'}}>
+              Private class
+            </SmallText>
+          </View>
         </View>
         <View style={{flex: 2}}>
           {!userGymsLoading ? (
