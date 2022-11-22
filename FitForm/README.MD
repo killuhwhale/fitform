@@ -38,16 +38,11 @@ TODOs
         Android
             - Apply for app store
             - Signing package
-
         iOS:
             - Apply for app store
 
 
 
-    Keyboard pushes weirdly on some views
-        - Create Gym Class
-        - Android -> Pushes other views up
-        - iOS     -> Keyboard possibly hides current view
 
     StatsScreen:
         - Hoizontal picker,
