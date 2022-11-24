@@ -34,7 +34,13 @@ import {RootStackParamList} from '../navigators/RootStack';
 
 import * as RootNavigation from '../navigators/RootNavigation';
 import {StackScreenProps} from '@react-navigation/stack';
-import {Modal, StyleSheet, TouchableHighlight, View} from 'react-native';
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  TouchableHighlight,
+  View,
+} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
 import AuthManager from '../utils/auth';
 import {
@@ -51,6 +57,7 @@ import {
   settingsModalViewStyle,
 } from '../app_components/modals/modalStyles';
 import DeleteActionCancelModal from '../app_components/modals/deleteByNameModal';
+import FilterItemsModal from '../app_components/modals/filterItemsModal';
 
 export type Props = StackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -349,11 +356,61 @@ const FavGymClassesPanel: FunctionComponent<
 
 const WorkoutsPanel: FunctionComponent<WorkoutPanelProps> = props => {
   const theme = useTheme();
-  const goToGymClass = (id: number) => {
-    console.log('Navigate user to GymClasView with ID: ', id);
-  };
+  const [showSearchWorkouts, setShowSearchWorkouts] = useState(false);
+  // console.log('Workout Panel: ', props.data);
+  return (
+    <View
+      style={{
+        width: '100%',
+        height: '100%',
+      }}>
+      <Pressable
+        onPress={() => setShowSearchWorkouts(!showSearchWorkouts)}
+        style={{
+          borderRadius: 24,
+          backgroundColor: theme.palette.primary.main,
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+          <Icon name="apps-outline" color="white" style={{fontSize: 24}} />
 
-  return <WorkoutGroupCardList data={props.data} editable={true} />;
+          <View style={{marginLeft: 8}}>
+            <RegularText textStyles={{textAlign: 'center'}}>
+              {' '}
+              {props.data.length}{' '}
+            </RegularText>
+            <SmallText> Workouts </SmallText>
+          </View>
+        </View>
+      </Pressable>
+
+      <FilterItemsModal
+        searchTextPlaceHolder="Search Workouts"
+        onRequestClose={() => setShowSearchWorkouts(false)}
+        modalVisible={showSearchWorkouts}
+        uiView={WorkoutGroupCardList}
+        // Sort, showing latest at top of list
+        items={props.data.sort((a, b) =>
+          new Date(a.for_date).getTime() < new Date(b.for_date).getTime()
+            ? 1
+            : -1,
+        )}
+        extraProps={{
+          editable: true,
+          closeModalOnNav: () => setShowSearchWorkouts(false),
+        }}
+      />
+    </View>
+
+    // <WorkoutGroupCardList data={props.data} extraProps={{editable: true}} />
+  );
 };
 
 export const ActionCancelModal: FunctionComponent<{
@@ -619,7 +676,11 @@ const Profile: FunctionComponent<Props> = ({navigation, route}) => {
   //     isSuccess: workoutGroupSuccess, isError: workoutGroupErr,
   //     error: workoutGroupError } = useGetUsersWorkoutGroupsQuery("");
 
-  console.log('Profile data: ', data, dataWG, dataGymFavs, dataGymClassFavs);
+  // console.log('Profile data: ', data, dataWG, dataGymFavs, dataGymClassFavs);
+  console.log(
+    'Profile data: ',
+    dataWG?.workout_groups.completed_workout_groups,
+  );
   // Access/ send actions
   const dispatch = useAppDispatch();
   const [modalVisible, setModalVisible] = useState(false);
@@ -684,7 +745,7 @@ const Profile: FunctionComponent<Props> = ({navigation, route}) => {
           </View>
 
           {dataGymFavs?.favorite_gyms.length > 0 ? (
-            <View style={{flex: 3, width: '100%'}}>
+            <View style={{flex: 4, width: '100%'}}>
               <SmallText>Favorite Gyms</SmallText>
               <ScrollView>
                 <FavGymsPanel data={dataGymFavs?.favorite_gyms} />
@@ -695,7 +756,7 @@ const Profile: FunctionComponent<Props> = ({navigation, route}) => {
           )}
 
           {dataGymClassFavs?.favorite_gym_classes.length > 0 ? (
-            <View style={{flex: 3, width: '100%'}}>
+            <View style={{flex: 4, width: '100%'}}>
               <SmallText> Favorite Gym Classess</SmallText>
               <ScrollView>
                 <FavGymClassesPanel
@@ -708,7 +769,7 @@ const Profile: FunctionComponent<Props> = ({navigation, route}) => {
           )}
 
           {usersGyms && usersGyms.length ? (
-            <View style={{flex: 3, width: '100%'}}>
+            <View style={{flex: 6, width: '100%'}}>
               <RegularText>My Gyms</RegularText>
               <ScrollView style={{width: '100%'}}>
                 <GymsPanel data={usersGyms} onDelete={onConfirmDelete} />
@@ -718,8 +779,8 @@ const Profile: FunctionComponent<Props> = ({navigation, route}) => {
             <></>
           )}
 
-          <View style={{flex: 10, width: '100%'}}>
-            <RegularText>My Workouts</RegularText>
+          <View style={{flex: 2, width: '100%', marginBottom: 12}}>
+            {/* <RegularText>My Workouts</RegularText> */}
             {!isLoadingWG && dataWG ? (
               <WorkoutsPanel
                 data={[
@@ -763,24 +824,5 @@ const Profile: FunctionComponent<Props> = ({navigation, route}) => {
     </PageContainer>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
-  },
-  buttonOpen: {
-    backgroundColor: '#F194FF',
-  },
-  buttonClose: {
-    backgroundColor: '#2196F3',
-  },
-  textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-});
 
 export default Profile;

@@ -18,7 +18,13 @@ import {WorkoutGroupCardList} from '../app_components/Cards/cardList';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {RootStackParamList} from '../navigators/RootStack';
 import {StackScreenProps} from '@react-navigation/stack';
-import {ImageBackground, ScrollView, View} from 'react-native';
+import {
+  ImageBackground,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  View,
+} from 'react-native';
 import {
   useDeleteGymClassMutation,
   useFavoriteGymClassMutation,
@@ -37,6 +43,7 @@ import ManageCoachesModal from '../app_components/modals/coachModal';
 import greenGrad from './../../assets/bgs/greenGrad.png';
 import Input from '../app_components/Input/input';
 import DeleteActionCancelModal from '../app_components/modals/deleteByNameModal';
+import FilterItemsModal from '../app_components/modals/filterItemsModal';
 export type Props = StackScreenProps<RootStackParamList, 'GymClassScreen'>;
 
 const GymClassScreenContainer = styled(Container)`
@@ -191,6 +198,9 @@ const GymClassScreen: FunctionComponent<Props> = ({
     setFilterResult(items);
     setTerm(term);
   };
+
+  const [showSearchWorkouts, setShowSearchWorkouts] = useState(false);
+
   return (
     <GymClassScreenContainer>
       <ImageBackground
@@ -409,8 +419,45 @@ const GymClassScreen: FunctionComponent<Props> = ({
         <></>
       )}
 
-      <View style={{flex: 4}}>
-        <Row style={{color: 'black'}}>
+      <View style={{flex: 4, width: '100%'}}>
+        <View
+          style={{
+            width: '100%',
+            height: SCREEN_HEIGHT * 0.08,
+            justifyContent: 'center',
+          }}>
+          <Pressable
+            onPress={() => setShowSearchWorkouts(!showSearchWorkouts)}
+            style={{
+              borderRadius: 24,
+              backgroundColor: theme.palette.primary.main,
+              width: '100%',
+              height: '100%',
+
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+              <Icon name="apps-outline" color="white" style={{fontSize: 24}} />
+
+              <View style={{marginLeft: 8}}>
+                <RegularText textStyles={{textAlign: 'center'}}>
+                  {' '}
+                  {workoutGroups.length}{' '}
+                </RegularText>
+                <SmallText> Workouts </SmallText>
+              </View>
+            </View>
+          </Pressable>
+
+          {/* </TouchableWithoutFeedbackComponent> */}
+        </View>
+
+        {/* <Row style={{color: 'black'}}>
           <View style={{height: 40, marginTop: 16}}>
             <Input
               onChangeText={filterText}
@@ -433,15 +480,26 @@ const GymClassScreen: FunctionComponent<Props> = ({
               placeholder="Search workouts"
             />
           </View>
-        </Row>
+        </Row> */}
         {isLoading ? (
           <SmallText>Loading....</SmallText>
         ) : isSuccess ? (
-          <WorkoutGroupCardList
-            data={workoutGroups.filter((_, i) => filterResult.indexOf(i) >= 0)}
-            editable={data.user_can_edit}
+          <FilterItemsModal
+            onRequestClose={() => setShowSearchWorkouts(false)}
+            modalVisible={showSearchWorkouts}
+            searchTextPlaceHolder="Search Workouts"
+            uiView={WorkoutGroupCardList}
+            items={workoutGroups}
+            extraProps={{
+              editable: data.user_can_edit,
+              closeModalOnNav: () => setShowSearchWorkouts(false),
+            }}
           />
-        ) : isError ? (
+        ) : // <WorkoutGroupCardList
+        //   data={workoutGroups.filter((_, i) => filterResult.indexOf(i) >= 0)}
+        //   editable={data.user_can_edit}
+        // />
+        isError ? (
           <SmallText>Error.... {error.toString()}</SmallText>
         ) : (
           <SmallText>No Data</SmallText>
@@ -457,13 +515,6 @@ const GymClassScreen: FunctionComponent<Props> = ({
         onRequestClose={() => setShowCoachModal(false)}
         gymClassID={id}
       />
-      {/* <ActionCancelModal
-        closeText="Close"
-        modalText={`Delete ${title}?`}
-        onAction={onDelete}
-        modalVisible={deleteGymClassModalVisible}
-        onRequestClose={() => setDeleteGymClassModalVisibleVisible(false)}
-        /> */}
 
       <DeleteActionCancelModal
         confirmName={title}

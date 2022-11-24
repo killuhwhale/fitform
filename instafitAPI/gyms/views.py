@@ -574,7 +574,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
                 owner_id=pk,
                 owned_by_class=True,
                 archived=False
-            ).order_by('for_date')
+            ).order_by('-for_date')
         elif is_private and user_is_member or not is_private:
             # Show finished workouts
             workout_groups = WorkoutGroups.objects.filter(
@@ -582,7 +582,7 @@ class GymClassViewSet(DestroyWithPayloadMixin, viewsets.ModelViewSet, GymClassPe
                 owned_by_class=True,
                 finished=True,
                 archived=False,
-            ).order_by('for_date')
+            ).order_by('-for_date')
 
         # Return from Microservice
         gym_class.workoutgroups_set = workout_groups
@@ -1443,8 +1443,8 @@ class ProfileViewSet(viewsets.ViewSet):
         data = dict()
 
         wgs = WorkoutGroups.objects.filter(
-            owner_id=user_id, owned_by_class=False)
-        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id)
+            owner_id=user_id, owned_by_class=False).order_by('for_date')
+        cwgs = CompletedWorkoutGroups.objects.filter(user_id=user_id).order_by('for_date')
         data['created_workout_groups'] = wgs
         data['completed_workout_groups'] = cwgs
         workouts['workout_groups'] = data

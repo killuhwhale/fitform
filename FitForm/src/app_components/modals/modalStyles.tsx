@@ -34,6 +34,24 @@ const settingsModalViewStyle = StyleSheet.create({
     elevation: 5,
   },
 });
+const filterInputModalViewStyle = StyleSheet.create({
+  filterInputModalView: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    flex: 8,
+  },
+});
 const modalTextStyle = StyleSheet.create({
   modalText: {
     marginBottom: 15,
@@ -54,4 +72,5 @@ export {
   settingsModalViewStyle,
   modalTextStyle,
   centeredViewStyle,
+  filterInputModalViewStyle,
 };

@@ -22,7 +22,7 @@ class GymSerializer(serializers.ModelSerializer):
 
     def get_gym_classes(self, instance):
         print('Gym View instance: ', instance)
-        classes = instance.gymclasses_set.order_by('date')
+        classes = instance.gymclasses_set.order_by('-date')
         return Gym_ClassSerializer(classes, many=True, required=False).data
 
 

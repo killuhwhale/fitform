@@ -32,7 +32,8 @@ const ManageCoachesModal: FunctionComponent<{
     isError,
     error,
   } = useGetUsersQuery('');
-  const [newCoach, setNewCoach] = useState(data?.length > 0 ? 0 : -1); // if we have users, init to 0, the first user, else we do not have any coaches to add
+  console.log('coach modal users: ', data);
+  const [newCoach, setNewCoach] = useState(0); // if we have users, init to 0, the first user, else we do not have any coaches to add
   const {
     data: allCoaches,
     isLoading: coachesLoading,
@@ -50,7 +51,7 @@ const ManageCoachesModal: FunctionComponent<{
 
   const addNewCoach = () => {
     console.log('Adding ', newCoach, data[newCoach]);
-    if (data[newCoach] == undefined) {
+    if (newCoach >= data?.length || data[newCoach] == undefined) {
       console.log('Invalid member');
       return;
     }
@@ -126,6 +127,7 @@ const ManageCoachesModal: FunctionComponent<{
           <View
             style={[
               settingsModalViewStyle.settingsModalView,
+
               {backgroundColor: theme.palette.darkGray},
             ]}>
             <View
@@ -209,53 +211,61 @@ const ManageCoachesModal: FunctionComponent<{
             </View>
 
             {!coachesLoading ? (
-              <ScrollView
-                style={{width: '100%', flex: 1}}
-                contentContainerStyle={{justifyContent: 'center'}}>
-                {allCoaches?.map((coach, i) => {
-                  console.log('C :: ', coach);
-                  return (
-                    <View
-                      key={`key_${i}__`}
-                      style={{
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        width: '100%',
-                        borderBottomWidth: 1,
-                        borderTopWidth: 1,
-                        borderColor: 'white',
-                        paddingVertical: 8,
-                      }}>
+              <View style={{backgroundColor: 'green', flex: 2, width: '100%'}}>
+                <ScrollView
+                  style={{width: '100%', backgroundColor: 'green'}}
+                  contentContainerStyle={{justifyContent: 'center'}}>
+                  {allCoaches?.map((coach, i) => {
+                    console.log('C :: ', coach);
+                    return (
                       <View
-                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        key={`key_coac${coach.id}__`}
+                        style={{
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          width: '100%',
+                          borderBottomWidth: 1,
+                          borderTopWidth: 1,
+                          borderColor: 'white',
+                          paddingVertical: 8,
+                          backgroundColor: 'red',
+                        }}>
                         <View
                           style={{
-                            flex: 5,
-                            alignItems: 'flex-start',
-                            paddingLeft: 16,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            width: '100%',
                           }}>
-                          <RegularText>{coach.username}</RegularText>
-                        </View>
-                        <View style={{flex: 1}}>
-                          <IconButton
-                            style={{height: 24}}
-                            icon={
-                              <Icon
-                                name="remove-circle-sharp"
-                                color="red"
-                                style={{fontSize: 24}}
-                              />
-                            }
-                            onPress={() => {
-                              onRemoveCoach(i);
-                            }}
-                          />
+                          <View
+                            style={{
+                              flex: 5,
+                              alignItems: 'flex-start',
+                              width: '100%',
+                              paddingLeft: 16,
+                            }}>
+                            <RegularText>{coach.username} asdasd</RegularText>
+                          </View>
+                          <View style={{flex: 1}}>
+                            <IconButton
+                              style={{height: 24}}
+                              icon={
+                                <Icon
+                                  name="remove-circle-sharp"
+                                  color="red"
+                                  style={{fontSize: 24}}
+                                />
+                              }
+                              onPress={() => {
+                                onRemoveCoach(i);
+                              }}
+                            />
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </ScrollView>
+                    );
+                  })}
+                </ScrollView>
+              </View>
             ) : (
               <></>
             )}

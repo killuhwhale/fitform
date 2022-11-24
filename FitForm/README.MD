@@ -44,16 +44,6 @@ TODOs
 
 
 
-    StatsScreen:
-        - Hoizontal picker,
-            - When toggling back and forth, the picker isn't completely in sync with graph. THe grapgh sometimes doesn't update for a few changes...
-                - Feels suspicious with react...]
-        - On init visit:
-            - Select Kgs and nothing shows
-            - Click the toggle button and now data shows....
-        - Data show show when switching to KGS without needing to toggle the data first.
-
-
 
     -  Create Script to create WorkoutNames (Started in instaFitAPI)
         - Python to generate script
