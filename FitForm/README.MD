@@ -35,6 +35,9 @@ const LIST_GYMS = "http://localhost:8000/gyms/";
 TODOs
 
     Deployment:
+
+        # https://reactnative.dev/docs/signed-apk-android#adding-signing-config-to-your-apps-gradle-config
+
         Android
             - Apply for app store
             - Signing package
