@@ -59,7 +59,7 @@ const WorkoutScreenContainer = styled(Container)`
   width: 100%;
 `;
 
-//
+// sudo keytool -genkey -v -keystore fitform-upload-key.keystore -alias fitform-signing-key -keyalg RSA -keysize 2048 -validity 10000
 
 /**
  *  TODO()
